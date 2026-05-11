@@ -101,6 +101,45 @@ class Query(BaseModel):
         if not v or not v.strip():
             raise ValueError('Query cannot be empty')
         return v
+
+
+class EvaluateRequest(BaseModel):
+    company: str
+    criterion: str
+    query: str
+    top_k: int = 3
+    format: str = "markdown"  # "markdown" | "text"
+
+    @validator('company')
+    def validate_evaluate_company(cls, v):
+        if not v or not v.strip():
+            raise ValueError('company cannot be empty')
+        return v
+
+    @validator('criterion')
+    def validate_evaluate_criterion(cls, v):
+        if not v or not v.strip():
+            raise ValueError('criterion cannot be empty')
+        return v
+
+    @validator('query')
+    def validate_evaluate_query(cls, v):
+        if not v or not v.strip():
+            raise ValueError('query cannot be empty')
+        return v
+
+    @validator('top_k')
+    def validate_evaluate_top_k(cls, v):
+        if v < 1 or v > 100:
+            raise ValueError('top_k must be between 1 and 100')
+        return v
+
+    @validator('format')
+    def validate_evaluate_format(cls, v):
+        allowed = {"markdown", "text"}
+        if v not in allowed:
+            raise ValueError(f"format must be one of {sorted(allowed)}")
+        return v
     
     @validator('top_k')
     def validate_top_k(cls, v):
@@ -232,6 +271,94 @@ async def query_documents(query: Query):
         if conn:
             conn.close()
         raise HTTPException(status_code=500, detail=f"Error querying documents: {str(e)}")
+
+
+@app.post("/evaluate")
+async def evaluate(request: EvaluateRequest):
+    """Generate an ESG evaluation report (markdown) for a company + criterion."""
+    conn = None
+    try:
+        query_embedding = create_simple_embedding(request.query)
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT id, content,
+                   1 - (embedding <=> %s::vector) as similarity
+            FROM documents
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s;
+            """,
+            (query_embedding, query_embedding, request.top_k)
+        )
+        results = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        # Build a report-like response.
+        if results:
+            retrieved_md = "\n".join(
+                [
+                    f"{i+1}. (Doc {r['id']}, similarity {(float(r['similarity'])*100):.1f}%) {str(r['content'])[:300]}{'...' if len(str(r['content'])) > 300 else ''}"
+                    for i, r in enumerate(results)
+                ]
+            )
+            assessment = generate_simple_answer(request.query, results)
+        else:
+            retrieved_md = "(No relevant documents found in the database.)"
+            assessment = "No relevant documents found in the database."
+
+        if request.format == "markdown":
+            report = "\n".join(
+                [
+                    "# ESG Evaluation Report",
+                    f"**Company:** {request.company}",
+                    f"**Criterion:** {request.criterion}",
+                    "",
+                    "## Request",
+                    request.query,
+                    "",
+                    "## Retrieved Context",
+                    retrieved_md,
+                    "",
+                    "## Evaluation",
+                    assessment,
+                ]
+            )
+        else:
+            report = "\n".join(
+                [
+                    "ESG Evaluation Report",
+                    f"Company: {request.company}",
+                    f"Criterion: {request.criterion}",
+                    "",
+                    "Request:",
+                    request.query,
+                    "",
+                    "Retrieved Context:",
+                    retrieved_md,
+                    "",
+                    "Evaluation:",
+                    assessment,
+                ]
+            )
+
+        return {
+            "company": request.company,
+            "criterion": request.criterion,
+            "query": request.query,
+            "retrieved_count": len(results),
+            "report": report,
+            "format": request.format,
+        }
+    except Exception as e:
+        if conn:
+            conn.close()
+        raise HTTPException(status_code=500, detail=f"Error generating evaluation: {str(e)}")
 
 
 def create_simple_embedding(text: str) -> str:

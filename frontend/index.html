@@ -403,27 +403,38 @@
 
             const companyLabel = companySelect.options[companySelect.selectedIndex]?.text ?? '';
             const criteriaLabel = criteriaSelect.options[criteriaSelect.selectedIndex]?.text ?? '';
+            const company = companySelect.value;
+            const criterion = criteriaSelect.value;
 
-            const now = new Date().toLocaleString();
-            const markdownReport = [
-                `# ESG Evaluation Report`,
-                `**Generated:** ${now}`,
-                `**Company:** ${companyLabel}`,
-                `**Criterion:** ${criteriaLabel}`,
-                '',
-                `## Summary`,
-                `- (Placeholder) Hook this button up to your backend to generate a real report.`,
-                '',
-                `## Notes`,
-                `- You can replace this placeholder with the backend response markdown.`,
-                `- Use headings, lists, and code blocks as needed.`,
-                '',
-                '```',
-                'Example: include structured findings here',
-                '```',
-            ].join('\n');
+            const query = `Evaluate ${companyLabel}'s ${criteriaLabel}. Provide a structured ESG report with key findings.`;
 
-            typeMarkdownInto(reportOutput, markdownReport);
+            typeMarkdownInto(reportOutput, `Generating report for **${companyLabel}** (${criteriaLabel})...`, { charsPerSecond: 60 });
+
+            try {
+                const response = await fetch('/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company,
+                        criterion,
+                        query,
+                        top_k: 3,
+                        format: 'markdown'
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    const detail = data?.detail ?? 'Unknown error';
+                    typeMarkdownInto(reportOutput, `# Error\n\n${detail}`);
+                    return;
+                }
+
+                const report = data?.report ?? '# Error\n\nBackend response missing `report`.';
+                typeMarkdownInto(reportOutput, report);
+            } catch (err) {
+                typeMarkdownInto(reportOutput, `# Network Error\n\n${err?.message ?? String(err)}`);
+            }
         });
     </script>
 </body>

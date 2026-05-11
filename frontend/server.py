@@ -132,7 +132,8 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
         """Reverse-proxy POST requests (document uploads, queries) to backend."""
         path_without_query = self.path.split('?')[0]
         if (path_without_query.startswith('/documents') or 
-            path_without_query.startswith('/query')):
+            path_without_query.startswith('/query') or
+            path_without_query.startswith('/evaluate')):
             self.proxy_to_backend('POST')
         else:
             self.send_response(404)
