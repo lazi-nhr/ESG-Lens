@@ -31,6 +31,8 @@ The default `DB_HOST` is a Nuvolos-assigned internal hostname. On the Nuvolos
 internal network every pod gets a hostname like `nv-service-<hash>`, which
 other pods on the same subnet can resolve — but nothing outside can.
 
+You can find the hostname in the sidebar when hovering over the running instance.
+
 ## Network position
 
 This backend is **not** exposed to the internet. The frontend server

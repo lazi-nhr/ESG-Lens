@@ -84,6 +84,12 @@ python3 start_frontend.py    # starts reverse-proxy server on port 3000
 
 Open the VS Code Server URL for port 3000 in your browser.
 
+1. In the bottom panel of your VS Code interface (where you see the Terminal), look for a tab labeled Ports.
+
+2. Look for the row where the Port is 3000.
+
+3. Click the link in the "Forwarded Address" column.
+
 ### 3. Stop everything
 
 ```bash
