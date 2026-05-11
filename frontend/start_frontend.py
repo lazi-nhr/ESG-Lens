@@ -20,7 +20,7 @@ NC = '\033[0m'  # No Color
 
 # Frontend configuration
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "3000")
-BACKEND_HOST = os.getenv("BACKEND_HOST", "nv-service-8274117e85103f8c55c6f267d3e4eb1f:8500")
+BACKEND_HOST = os.getenv("BACKEND_HOST", "nv-service-88b8cea7986f962e7adf9de55882f1d8:8500")
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent.absolute()
