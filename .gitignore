@@ -51,3 +51,6 @@ node_modules/
 # Temporary files
 /tmp/
 *.tmp
+
+# Env files
+.env
