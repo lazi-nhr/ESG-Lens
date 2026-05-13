@@ -1,5 +1,14 @@
 let activeTypingTimer = null;
 
+const themeToggle = document.getElementById('themeToggle');
+
+themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    themeToggle.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+})
+
+
 function renderMarkdownInto(element, markdownText) {
     // Render markdown and sanitize (important if content comes from a backend)
     const html = window.marked ? window.marked.parse(markdownText, { breaks: true }) : markdownText;
