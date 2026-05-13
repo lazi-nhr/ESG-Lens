@@ -9,17 +9,22 @@
     --card-bg: white;
     --text-main: #333;
     --text-muted: #555;
-    --border-color: #e0e0e0;
-    --input-bg: white;
+    --border-color: black;
+    --input-bg: #f1f5f9;
+    --report-bg: #f1f5f9;
+    --code-bg: white;
 }
 
 body.dark-mode {
-    --bg-gradient:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --card-bg: #2d3748;
-    --text-main: #f7fafc;
+    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --card-bg: black;
+    --text-main: white;
     --text-muted: #cbd5e0;
-    --border-color: #4a5568;
-    --input-bg: #1a202c;
+    --border-color: white;
+    --input-bg: #131720;
+    --report-bg: #131720;
+    --code-bg: #2d3748;
+    color-scheme: dark;
 }
 
 body {
@@ -75,6 +80,11 @@ body {
     margin-bottom: 15px;
 }
 
+option {
+    background-color: var(--input-bg); 
+    color: var(--text-main);
+}
+
 .eval-row {
     display: flex;
     gap: 15px;
@@ -122,11 +132,12 @@ body {
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: 14px;
     transition: border-color 0.3s;
     background: var(--input-bg);
+    color: var(--text-main)
 }
 
 .form-group input:focus,
@@ -210,23 +221,25 @@ button:disabled {
 }
 
 .response-area {
-    background: #f9f9f9;
-    border: 1px solid #e0e0e0;
+    background: var(--report-bg);
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 15px;
     min-height: 200px;
     white-space: pre-wrap;
     font-family: 'Courier New', monospace;
     font-size: 14px;
+    color: var(--text-main);
 }
 
 .report-output {
     width: 100%;
     min-height: 420px;
     padding: 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
-    background: #f9f9f9;
+    background: var(--report-bg);
+    color: var(--text-main);
     font-size: 14px;
     overflow: auto;
 }
@@ -234,8 +247,11 @@ button:disabled {
 /* Minimal markdown styling inside the report area */
 .report-output h1,
 .report-output h2,
-.report-output h3 {
-    color: #333;
+.report-output h3,
+.report-output p,
+.report-output ul,
+.report-output ol {
+    color: var(--text-main);
     margin: 12px 0 8px;
 }
 
@@ -258,9 +274,10 @@ button:disabled {
 .report-output pre {
     margin: 10px 0;
     padding: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
-    background: white;
+    background: var(--code-bg);
+    color: var(--text-main);
     overflow: auto;
 }
 
@@ -268,7 +285,8 @@ button:disabled {
     margin: 10px 0;
     padding: 8px 12px;
     border-left: 4px solid #667eea;
-    background: white;
+    background: var(--code-bg);
+    color: var(--text-main);
 }
 
 .full-width {
@@ -294,4 +312,24 @@ button:disabled {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+button.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: auto;
+    background: white;
+    color: black;
+    border: 2px solid black;
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 14px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+body.dark-mode button.theme-toggle {
+    background: black;
+    color: white;
+    border-color: white;
 }
