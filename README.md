@@ -141,6 +141,7 @@ The frontend decides what to proxy based on the URL path:
 | `/health`              | Forwards to `backend:8500/health`  |
 | `/documents`           | Forwards to `backend:8500/documents` |
 | `/query`               | Forwards to `backend:8500/query`   |
+| `/evaluate`            | Forwards to `backend:8500/evaluate` |
 
 ## API endpoints
 
@@ -173,32 +174,146 @@ curl -X POST http://localhost:8500/query \
 .
 ├── backend/
 │   ├── app/
-│   ├── main.py              # FastAPI app (documents + vector search)
-│   ├── requirements.txt
-│   ├── start_backend.py     # Start script (checks DB, launches server)
-│   └── stop_backend.py      # Stop script
+│   │   ├── api/              # API routes (health, documents, query, evaluate)
+│   │   ├── core/             # Configuration and error handling
+│   │   ├── db/               # Database connection, schemas, repositories
+│   │   ├── llm/              # LLM integration for answer generation
+│   │   ├── retrieval/        # Vector search and similarity retrieval
+│   │   ├── services/         # Business logic (evaluate_service)
+│   │   ├── formatting/       # Report formatting and rendering
+│   │   └── main.py           # FastAPI app setup
+│   ├── scripts/
+│   │   ├── query_esg_evaluation.py   # API-based query script
+│   │   ├── query_database.py         # Direct database query script
+│   │   ├── batch_evaluate.py         # Batch evaluation script
+│   │   ├── seed_db.py                # Load PDFs into database
+│   │   ├── cli.py                    # CLI utilities
+│   │   ├── evaluations_example.json  # Example evaluation configs
+│   │   ├── quickstart.sh             # Interactive quick-start menu
+│   │   └── README.md                 # Query scripts documentation
+│   ├── main.py               # Entry point (imports from app.main)
+│   ├── requirements.txt       # Python dependencies
+│   ├── start_backend.py       # Start script (checks DB, launches server on :8500)
+│   └── stop_backend.py        # Stop script
 ├── frontend/
-│   ├── index.html           # Single-page UI
-│   ├── server.py            # HTTP server + reverse proxy to backend
-│   ├── start_frontend.py
-│   └── stop_frontend.py
-├── setup.py / setup.sh      # One-command full-stack start
-├── cleanup.py / cleanup.sh  # One-command full-stack teardown
-├── sample_data.csv           # 10 demo documents loaded on first run
-├── STORY.md                  # Narrative walkthrough
-└── README.md
+│   ├── index.html            # Single-page UI
+│   ├── server.py             # HTTP server + reverse proxy to backend
+│   ├── start_frontend.py      # Start script (launches server on :3000)
+│   └── stop_frontend.py       # Stop script
+├── data/
+│   ├── raw_pdfs/             # PDF documents for seeding the database
+│   └── sample_data.csv        # Sample ESG documents (loaded on first run)
+├── setup.py / setup.sh        # One-command full-stack setup
+├── cleanup.py / cleanup.sh    # One-command full-stack teardown
+├── STORY.md                   # Narrative walkthrough
+└── README.md                  # This file
 ```
+
+## Query Scripts
+
+The `backend/scripts/` directory contains command-line tools for querying the ESG database:
+
+- **query_esg_evaluation.py** - HTTP API client for the FastAPI backend
+- **query_database.py** - Direct database queries with vector/full-text search
+- **batch_evaluate.py** - Batch process multiple companies and criteria
+- **quickstart.sh** - Interactive menu to run example queries
+
+See [backend/scripts/README.md](backend/scripts/README.md) for detailed usage and examples.
 
 ## Technical notes
 
 ### Embeddings
 
-This demo uses a toy character-frequency embedding (384 dimensions) so it runs
-without any external API keys. For real use, swap `create_simple_embedding()`
-in `backend/main.py` with a proper model (e.g. `sentence-transformers`,
-OpenAI embeddings, etc.).
+The system uses **Sentence Transformers** (all-MiniLM-L6-v2, 384 dimensions) for document and query embeddings. Switch models in `app/core/config.py`:
 
-### RAG response
+```python
+# In requirements.txt: sentence-transformers==3.0.1
+# In config: EMBEDDING_MODEL = "all-MiniLM-L6-v2" or any HuggingFace model
+```
 
-Similarly, `generate_simple_answer()` just returns the top document. Plug in
-an LLM (OpenAI, Anthropic, open-source via Hugging Face) for real generation.
+For production, consider:
+- Larger models (all-mpnet-base-v2, 768 dim) for better quality
+- OpenAI embeddings API for superior performance
+- Cached embeddings for faster inference
+
+### LLM Integration
+
+The system supports multiple LLM providers via `app/llm/generator.py`:
+
+- **HuggingFace Inference API** (default, configurable via `HF_API_KEY`)
+- **OpenAI** (swap `generate_answer()` implementation)
+- **Open-source models** (Mistral, Llama via HuggingFace)
+
+Configure in `.env`:
+```bash
+LLM_PROVIDER=huggingface
+HF_MODEL=gpt2
+HF_API_KEY=your_api_key_here
+```
+
+### Vector Database
+
+Uses **PostgreSQL + pgvector** for:
+- Vector similarity search (cosine distance)
+- Hybrid search (vector + full-text keywords)
+- Indexed HNSW for sub-second search on millions of documents
+
+### Evaluation Reports
+
+The `/evaluate` endpoint generates structured ESG reports with:
+- Retrieved document context
+- LLM-generated assessment
+- Markdown or plain-text formatting
+- Configurable output per company/criterion
+
+## Database Management
+
+### Initialize Database
+
+The database is automatically initialized on first run:
+
+```bash
+python setup.py  # Initializes DB, creates tables, loads sample data
+```
+
+Or manually:
+
+```bash
+cd backend
+python start_backend.py  # Creates tables on startup if they don't exist
+```
+
+### Seed with Documents
+
+Load PDF documents into the database:
+
+```bash
+cd backend/scripts
+python seed_db.py  # Loads all PDFs from data/raw_pdfs/
+```
+
+### Clear Documents
+
+Delete all documents but keep tables:
+
+```bash
+python -c "
+import psycopg2
+conn = psycopg2.connect(host='localhost', port=5432, database='nuvolos', user='nuvolos', password='nuvolos')
+cur = conn.cursor()
+cur.execute('DELETE FROM documents;')
+conn.commit()
+cur.close()
+conn.close()
+print('✅ All documents deleted')
+"
+```
+
+### Reset Database
+
+Drop and recreate all tables:
+
+```bash
+python cleanup.py  # Stops servers, clears all data, removes logs
+python setup.py    # Reinitializes and starts fresh
+```
