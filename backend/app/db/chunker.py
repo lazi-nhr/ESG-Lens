@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional
 
 import nltk
-
+import unicodedata
 import re
 
 try:
@@ -37,6 +37,19 @@ def _count_tokens(text: str, encoding_name: str = "cl100k_base") -> int:
 def _make_chunk_id(doc_id: str, page: int, chunk_rank: int) -> str:
     return f"{doc_id}::p{page}::r{chunk_rank}"
 
+def _normalize_for_bm25(text: str) -> str:
+    """Lightweight normalization for BM25: fix hyphenation, collapse whitespace, unicode normalize, lowercase."""
+    if not text:
+        return ""
+    # fix common hyphenation where a word is split at line break
+    text = text.replace("-\n", "")
+    # normalize newlines to spaces
+    text = text.replace("\n", " ")
+    # unicode normalization
+    text = unicodedata.normalize("NFKC", text)
+    # collapse whitespace
+    text = re.sub(r"\s+", " ", text)
+    return text.strip().lower()
 
 def chunk_text_by_page(page_text: str,
                        doc_id: str,
