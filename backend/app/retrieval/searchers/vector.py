@@ -33,16 +33,9 @@ class VectorSearcher(BaseSearcher):
     def search(self, query: str, top_k: int = 5) -> List[Dict]:
         """
         Perform vector similarity search using pgvector.
-        
-        Args:
-            query: Search query
-            top_k: Number of results to return
-        
-        Returns:
-            List of documents with 'similarity' score (0-1)
         """
-        # Generate embedding for query
-        embedding = create_embedding(query)
+        # --- UPDATE THIS LINE TO USE is_query=True ---
+        embedding = create_embedding(query, is_query=True)
         
         # Search by similarity in database
         results = DocumentRepository.search_by_similarity(embedding, top_k)
