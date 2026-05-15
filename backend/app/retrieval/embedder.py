@@ -1,29 +1,37 @@
 """
-Embedding function: convert text to vector representation.
+Embedding function: convert text to vector representation using sentence-transformers.
 """
+import os
 from app.core.config import EMBEDDING_DIM
 
+_model = None
+# Dynamically grab the model from environment variables, defaulting to BGE
+MODEL_NAME = os.environ.get("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 
-def create_embedding(text: str) -> str:
+def _get_model():
+    """Load sentence-transformers model (lazy loading)."""
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer(MODEL_NAME)
+    return _model
+
+def create_embedding(text: str, is_query: bool = False) -> str:
     """
-    Create a simple embedding vector from text.
-    
-    This is a placeholder for demonstration. In production, use a proper embedding model
-    (e.g., sentence-transformers, OpenAI embeddings).
-    
-    Returns: string representation of a float vector (PostgreSQL pgvector format).
+    Create embedding vector from text using sentence-transformers.
     """
-    embedding = [0.0] * EMBEDDING_DIM
-    text = text.lower()
+    if not text or not text.strip():
+        return "[" + ",".join(["0.0"] * EMBEDDING_DIM) + "]"
+    
+    # --- THE BGE BUG FIX ---
+    # Apply the asymmetric query prefix if this is a search query
+    if is_query and "bge" in MODEL_NAME.lower():
+        encode_text = f"Represent this sentence for searching relevant passages: {text}"
+    else:
+        encode_text = text
 
-    # Use character codes and position to create a simple embedding
-    for i, char in enumerate(text[:EMBEDDING_DIM]):
-        embedding[i] = (ord(char) % 256) / 256.0
-
-    # Add word-based features with deterministic hashing
-    words = text.split()
-    for i, word in enumerate(words[:192]):
-        idx = (hash(word.encode('utf-8')) % 192) + 192
-        embedding[idx] = min(embedding[idx] + 0.1, 1.0)
-
-    return "[" + ",".join(map(str, embedding)) + "]"
+    model = _get_model()
+    embedding = model.encode(encode_text, convert_to_tensor=False)
+    embedding_list = embedding.tolist()
+    
+    return "[" + ",".join(map(str, embedding_list)) + "]"
