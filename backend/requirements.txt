@@ -9,3 +9,4 @@ PyPDF2==3.0.1
 nltk==3.8.1
 rank-bm25==0.2.2
 tiktoken==0.12.0
+torch==2.0.1+cu118  # GPU version for CUDA 11.8
