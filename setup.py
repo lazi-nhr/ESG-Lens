@@ -259,7 +259,9 @@ def load_sample_data():
     except subprocess.TimeoutExpired:
         backend_process.kill()
     backend_log.close()
-    time.sleep(2)
+    # Wait for port to be fully released (TIME_WAIT can take a few seconds)
+    print("Waiting for port to be released...")
+    time.sleep(10)
     
     return True
 
