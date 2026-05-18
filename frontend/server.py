@@ -194,7 +194,7 @@ def run_server(port=None):
     httpd = HTTPServer(server_address, StaticFileHandler)
     
     logger.info(f"Frontend server starting on http://localhost:{port}")
-    logger.info(f"Backend URL: {BACKEND_HOST}")
+    logger.info(f"Backend URL: {BACKEND_URL}")
     logger.info(f"Serving files from: {os.getcwd()}")
     logger.info("Press Ctrl+C to stop the server")
     
