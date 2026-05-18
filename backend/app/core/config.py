@@ -19,12 +19,14 @@ BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8500"))
 BACKEND_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
 
 # Retrieval
-EMBEDDING_DIM = 384
+EMBEDDING_DIM = 768
 DEFAULT_TOP_K = 3
 MAX_TOP_K = 100
 
 # LLM / Generation
 DEFAULT_FORMAT = "markdown"  # "markdown" | "text"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface")
-HF_MODEL = os.getenv("HF_MODEL", "gpt2")
-HF_API_KEY = os.getenv("HF_API_KEY")  # Required for HF inference API
+
+# Hardcoding Falcon-7b-instruct and your API key as direct fallbacks
+HF_MODEL = os.getenv("HF_MODEL", "tiiuae/falcon-7b-instruct")
+HF_API_KEY = os.getenv("HF_API_KEY", "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")

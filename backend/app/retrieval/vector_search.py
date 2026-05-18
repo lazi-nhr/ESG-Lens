@@ -20,7 +20,7 @@ async def retrieve_similar(query_text: str, top_k: int = DEFAULT_TOP_K) -> List[
     Returns: List of documents with similarity scores.
     """
     try:
-        query_embedding = create_embedding(query_text)
+        query_embedding = create_embedding(query_text, is_query=True)
         results = DocumentRepository.search_by_similarity(query_embedding, top_k)
         return results
     except Exception as e:

@@ -110,9 +110,11 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
         path_without_query = self.path.split('?')[0]
         
         # API paths → forward to backend
+      
         if (path_without_query == '/health' or 
             path_without_query.startswith('/documents') or 
-            path_without_query.startswith('/query')):
+            path_without_query.startswith('/query') or
+            path_without_query.startswith('/companies')): # <--- ADD THIS LINE
             self.proxy_to_backend('GET')
             return
 
@@ -160,10 +162,12 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         """Handle CORS preflight requests."""
         path_without_query = self.path.split('?')[0]
-        if (path_without_query.startswith('/documents') or 
-            path_without_query.startswith('/query') or
-            path_without_query.startswith('/evaluate')):
+        if ('/documents' in path_without_query or 
+            '/query' in path_without_query or
+            '/evaluate' in path_without_query or
+            '/companies' in path_without_query): # <-- Added here too!
             self.send_response(200)
+            # ... rest of the code stays the same
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -177,7 +181,7 @@ def run_server(port=None):
     """Run the frontend server."""
     if port is None:
         port = int(os.getenv('FRONTEND_PORT', '3000'))
-    # Change to the frontend directory
+        
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     
     server_address = ('', port)

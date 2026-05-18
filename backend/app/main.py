@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.connection import init_db
-from app.api.routes import health, documents, query, evaluate
+from app.api.routes import health, documents, query, evaluate, companies
 from app.core.config import BACKEND_HOST, BACKEND_PORT
 
 
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(documents.router)
     app.include_router(query.router)
     app.include_router(evaluate.router)
+    app.include_router(companies.router)
 
     return app
 

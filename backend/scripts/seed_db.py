@@ -54,7 +54,7 @@ def seed_database():
                 chunks = chunk_document(
                     page_texts,
                     doc_id,
-                    base_tokens=512,
+                    base_tokens=384,
                     overlap_tokens=64
                 )
                 

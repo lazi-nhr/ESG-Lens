@@ -4,22 +4,29 @@
     box-sizing: border-box;
 }
 
+/* 1. Light Mode Variables */
 :root {
     --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --card-bg: white;
     --text-main: #333;
     --text-muted: #555;
-    --border-color: #e0e0e0;
-    --input-bg: white;
+    --border-color: black; 
+    --input-bg: #f0f0f0;
+    --report-bg: #f0f0f0; 
+    --code-bg: white;
 }
 
+/* 2. Dark Mode Variables */
 body.dark-mode {
-    --bg-gradient:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --card-bg: #2d3748;
-    --text-main: #f7fafc;
+    color-scheme: dark; /* Native dark mode for scrollbars and dropdowns! */
+    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --card-bg: black;
+    --text-main: white;
     --text-muted: #cbd5e0;
-    --border-color: #4a5568;
+    --border-color: white; 
     --input-bg: #1a202c;
+    --report-bg: #1a202c;
+    --code-bg: #2d3748;
 }
 
 body {
@@ -28,6 +35,7 @@ body {
     color: var(--text-main);
     min-height: 100vh;
     padding: 20px;
+    position: relative; /* Helps position the toggle button */
 }
 
 .container {
@@ -51,6 +59,38 @@ body {
     opacity: 0.9;
 }
 
+/* --- Theme Toggle Switch --- */
+button.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: auto;
+    
+    /* Matches the Evaluate button shape and animation */
+    padding: 12px 30px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s, background-color 0.3s, color 0.3s;
+    
+    /* Light Mode Colors (Black Button, White Text) */
+    background: black;
+    color: white;
+}
+
+button.theme-toggle:hover {
+    transform: translateY(-2px); /* Gives it that nice "lift" effect */
+}
+
+/* Dark Mode Colors (White Button, Black Text) */
+body.dark-mode button.theme-toggle {
+    background: white;
+    color: black;
+}
+
+/* --- Main Layout --- */
 .main-content {
     display: grid;
     grid-template-columns: 1fr;
@@ -71,10 +111,7 @@ body {
     font-size: 1.5em;
 }
 
-.form-group {
-    margin-bottom: 15px;
-}
-
+/* --- Form Elements --- */
 .eval-row {
     display: flex;
     gap: 15px;
@@ -92,24 +129,6 @@ body {
     flex: 0 0 auto;
 }
 
-.eval-row button {
-    width: auto;
-    padding-left: 24px;
-    padding-right: 24px;
-    white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-    .eval-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .eval-row button {
-        width: 100%;
-    }
-}
-
 .form-group label {
     display: block;
     margin-bottom: 5px;
@@ -117,6 +136,7 @@ body {
     font-weight: 500;
 }
 
+/* Matched borders to 2px */
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -127,6 +147,7 @@ body {
     font-size: 14px;
     transition: border-color 0.3s;
     background: var(--input-bg);
+    color: var(--text-main);
 }
 
 .form-group input:focus,
@@ -136,12 +157,14 @@ body {
     border-color: var(--border-color);
 }
 
-.form-group textarea {
-    resize: vertical;
-    min-height: 100px;
+/* Lock in the colors for dropdown list items */
+option {
+    background-color: var(--input-bg);
+    color: var(--text-main);
 }
 
-button {
+/* --- Evaluate Button --- */
+button.primary-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
@@ -154,100 +177,65 @@ button {
     font-weight: 600;
 }
 
-button:hover {
+button.primary-btn:hover {
     transform: translateY(-2px);
 }
 
-button:active {
-    transform: translateY(0);
+@media (max-width: 768px) {
+    .eval-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .eval-row button {
+        width: 100%;
+    }
 }
 
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.status {
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    font-weight: 500;
-}
-
-.status.success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.status.error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.status.info {
-    background: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-}
-
-.documents-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.document-item {
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    background: #f9f9f9;
-}
-
-.document-item strong {
-    color: #667eea;
-}
-
-.response-area {
-    background: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    padding: 15px;
-    min-height: 200px;
-    white-space: pre-wrap;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-}
-
+/* --- Report Output Box --- */
 .report-output {
-    width: 100%;
-    min-height: 420px;
-    padding: 15px;
-    border: 1px solid #e0e0e0;
+    background: var(--report-bg);
+    border: 1px solid var(--border-color);
+    padding: 20px;
     border-radius: 5px;
-    background: #f9f9f9;
-    font-size: 14px;
-    overflow: auto;
+    font-size: 15px;
+    line-height: 1.6;
+    
+    /* 1. Lock the height and make it scrollable */
+    max-height: 300px; /* Adjust this number to make the box taller or shorter! */
+    overflow-y: auto;  /* Adds a vertical scrollbar when content exceeds 500px */
+    
+    /* Optional: Keep words wrapping nicely */
+    white-space: normal;
+    word-wrap: break-word;
 }
 
-/* Minimal markdown styling inside the report area */
+/* --- Optional Pro-Tip: Custom Scrollbar Styling --- */
+/* This makes the scrollbar look sleek and modern instead of the clunky browser default */
+.report-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.report-output::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.report-output::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+body.dark-mode .report-output::-webkit-scrollbar-thumb {
+    background: #555;
+}
+
 .report-output h1,
 .report-output h2,
-.report-output h3 {
-    color: #333;
-    margin: 12px 0 8px;
-}
-
-.report-output p {
-    margin: 8px 0;
-    color: #333;
-}
-
+.report-output h3,
+.report-output p,
 .report-output ul,
 .report-output ol {
-    margin: 8px 0 8px 20px;
-    color: #333;
+    color: var(--text-main);
+    margin: 12px 0 8px;
 }
 
 .report-output code {
@@ -258,9 +246,10 @@ button:disabled {
 .report-output pre {
     margin: 10px 0;
     padding: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
-    background: white;
+    background: var(--code-bg);
+    color: var(--text-main);
     overflow: auto;
 }
 
@@ -268,30 +257,39 @@ button:disabled {
     margin: 10px 0;
     padding: 8px 12px;
     border-left: 4px solid #667eea;
-    background: white;
+    background: var(--code-bg);
+    color: var(--text-main);
 }
 
-.full-width {
-    grid-column: 1 / -1;
+/* --- Report Header & Download Button --- */
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.loading {
-    text-align: center;
-    padding: 20px;
-    color: #667eea;
+/* Remove the bottom margin from the h2 so it centers perfectly with the button */
+.report-header h2 {
+    margin-bottom: 0;
 }
 
-.spinner {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #667eea;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
+button.download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;              
+    
+    /* Back to automatic sizing based on content! */
+    width: auto;           
+    height: auto;
+    padding: 12px 24px;    
+    
+    font-size: 16px;
+    font-weight: 600;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+button.download-btn svg {
+    width: 18px;
+    height: 18px;
 }

@@ -1,110 +1,81 @@
-"""
-LLM generation: wrapper for language model calls.
-Integrates with Hugging Face Inference API.
-Falls back to simple placeholder if API key not configured.
-"""
 from typing import List, Dict
-import aiohttp
+import logging, os
 
-from app.core.config import HF_MODEL, HF_API_KEY, LLM_PROVIDER
-from app.core.errors import GenerationError
+logger = logging.getLogger(__name__)
 
+# 1. Update the model target
+MODEL_NAME = os.environ.get("LOCAL_LLM_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
+CACHE_DIR = os.environ.get("HF_HOME", "/files/.hf_cache")
+_model = None
+_tokenizer = None
+
+def _get_model():
+    global _model, _tokenizer
+    if _model is None:
+        # Changed to Auto classes for decoder-only architectures
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        logger.info(f"Loading {MODEL_NAME}...")
+        _tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, cache_dir=CACHE_DIR)
+        _model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME, 
+            cache_dir=CACHE_DIR, 
+            device_map="cpu", # Keeps it on Nuvulos CPU
+            torch_dtype="auto"
+        )
+        logger.info("Model ready.")
+    return _model, _tokenizer
 
 async def generate_answer(query: str, retrieved_docs: List[Dict]) -> str:
-    """
-    Generate an answer based on the query and retrieved documents.
-    Uses Hugging Face Inference API if configured, otherwise falls back to placeholder.
-    Gracefully falls back to placeholder if API is unavailable.
-    
-    Args:
-        query: The user's question.
-        retrieved_docs: List of similar documents from the database.
-    
-    Returns: Generated answer string.
-    """
+    if not retrieved_docs:
+        return "No relevant documents found in the database."
     try:
-        if not retrieved_docs:
-            return "No relevant documents found in the database."
-
-        # If HF API is configured, try to use it
-        if HF_API_KEY and LLM_PROVIDER == "huggingface":
-            try:
-                return await _call_huggingface_api(query, retrieved_docs)
-            except Exception as hf_error:
-                # HF API failed, fall back to placeholder
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"HF API failed, using placeholder: {hf_error}")
-                return _placeholder_answer(retrieved_docs)
-        else:
-            # No HF API configured, use placeholder
-            return _placeholder_answer(retrieved_docs)
+        return _run_local_inference(query, retrieved_docs)
     except Exception as e:
-        raise GenerationError(f"Error generating answer: {str(e)}")
+        logger.error(f"Local inference failed: {e}")
+        return _placeholder_answer(retrieved_docs)
 
+def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
+    model, tokenizer = _get_model()
+    
+    # Format context
+    context_parts = []
+    for i, doc in enumerate(retrieved_docs[:3], start=1):
+        content = doc.get("content", "").strip()[:800]
+        context_parts.append(f"Excerpt {i}: {content}")
+    context = "\n\n".join(context_parts)
+    
+    # Read template
+    prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "esg_report.md")
+    with open(prompt_path, "r") as f:
+        template = f.read()
+        
+    # Extract company name dynamically out of the query string if possible, or leave a fallback
+    company_name = "ABB" if "ABB" in query else ("Roche" if "Roche" in query else "Target Company")
+    formatted_prompt = template.format(company=company_name, criterion="Environmental", context=context)
 
-async def _call_huggingface_api(query: str, retrieved_docs: List[Dict]) -> str:
-    """
-    Call Hugging Face Inference API with context from retrieved documents.
+    # 2. Use modern Chat Templates for instruction alignment
+    messages = [
+        {"role": "system", "content": "You are a professional ESG assistant. Generate comprehensive structured reports."},
+        {"role": "user", "content": formatted_prompt}
+    ]
     
-    Args:
-        query: The user's question.
-        retrieved_docs: List of similar documents.
+    text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
     
-    Returns: LLM-generated answer.
-    """
-    # Build context from retrieved documents
-    context = "\n\n".join(
-        f"Document {i+1}:\n{doc['content']}"
-        for i, doc in enumerate(retrieved_docs[:3])  # Use top 3 docs
+    # 3. Request a higher token count for long detailed paragraphs
+    generated_ids = model.generate(
+        **model_inputs,
+        max_new_tokens=800, 
+        temperature=0.3,  # Lower temperature prevents hallucinating metrics
+        do_sample=True
     )
     
-    # Build prompt for ESG evaluation
-    prompt = f"""Based on the following documents, provide a professional ESG evaluation response.
-
-Documents:
-{context}
-
-Question: {query}
-
-Response:"""
-    
-    # Call HF Inference API
-    api_url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-    print(HF_API_KEY)
-    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 500}}
-    
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(api_url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                if resp.status == 200:
-                    result = await resp.json()
-                    # HF returns list of dicts with 'generated_text'
-                    if isinstance(result, list) and len(result) > 0:
-                        return result[0].get("generated_text", "").strip()
-                    return str(result)
-                else:
-                    error_text = await resp.text()
-                    raise GenerationError(f"HF API error ({resp.status}): {error_text}")
-    except aiohttp.ClientError as e:
-        raise GenerationError(f"Failed to connect to HF API: {str(e)}")
-
+    # Trim prompt tokens from output
+    generated_ids = [output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)]
+    return tokenizer.decode(generated_ids[0], skip_special_tokens=True).strip()
 
 def _placeholder_answer(retrieved_docs: List[Dict]) -> str:
-    """
-    Fallback: return a simple answer from the best matching document.
-    Used when HF API is not configured.
-    
-    Args:
-        retrieved_docs: List of similar documents.
-    
-    Returns: Simple answer string.
-    """
-    best_match = retrieved_docs[0]
-    content = best_match["content"]
-    
-    if len(content) > 300:
-        return f"Based on the documents, here's a summary: {content[:300]}..."
-    else:
-        return f"Based on the documents, here's what I found: {content}"
+    best = retrieved_docs[0]
+    content = best.get("content", "").strip()
+    snippet = content[:400] + "..." if len(content) > 400 else content
+    return f"[Showing best matching document (id={best.get('id','?')})]\n\n{snippet}"
