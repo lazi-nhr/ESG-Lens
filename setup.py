@@ -116,26 +116,30 @@ def get_document_count():
         conn.close()
         return count
     except Exception as e:
-        # Table might not exist yet
+        # Table might not exist yet, or query failed
+        print(f"  (Could not count documents: {type(e).__name__}: {str(e)})")
         return 0
 
 
-def wait_for_backend(timeout=30):
+def wait_for_backend(timeout=60):
     """Wait for backend to be ready."""
     print("Waiting for backend to be ready...")
     backend_url = f"http://{BACKEND_URL}:{BACKEND_PORT}/health"
     
     for i in range(timeout):
         try:
-            response = requests.get(backend_url, timeout=1)
+            response = requests.get(backend_url, timeout=2)
             if response.status_code == 200:
                 print_success("Backend is ready\n")
                 return True
-        except requests.exceptions.RequestException:
-            pass
+        except requests.exceptions.RequestException as e:
+            if i % 15 == 0 and i > 0:  # Log every 15 seconds
+                print(f"  Still waiting ({i}/{timeout}s)...")
         time.sleep(1)
     
     print_error(f"Backend failed to start within {timeout} seconds")
+    print(f"Attempted: {backend_url}")
+    print(f"Check logs: tail -f {BACKEND_LOG_FILE}")
     return False
 
 
