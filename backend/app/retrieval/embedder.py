@@ -5,7 +5,7 @@ import os
 from app.core.config import EMBEDDING_DIM, EMBEDDING_MODEL
 
 _model = None
-# Dynamically grab the model from environment variables, defaulting to BGE
+# Dynamically grab the model from environment variables
 MODEL_NAME = EMBEDDING_MODEL
 
 def _get_model():
