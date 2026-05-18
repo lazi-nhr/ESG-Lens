@@ -38,12 +38,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── Backend URL ──────────────────────────────────────────────────────────
-# The backend lives on the Nuvolos internal network.  Its hostname is set
-# via the BACKEND_HOST environment variable (provided by Nuvolos or by
-# start_frontend.py).  The browser never sees this URL.
-BACKEND_HOST = os.getenv('BACKEND_HOST', 'http://localhost:8500')
-if not BACKEND_HOST.startswith('http'):
-    BACKEND_HOST = f'http://{BACKEND_HOST}'
+# The backend lives on the Nuvolos internal network (or localhost for local dev).
+# This URL is set via the BACKEND_URL environment variable.
+# The browser never sees this URL (it only talks to this reverse proxy).
+BACKEND_URL = os.getenv('BACKEND_URL', 'localhost:8500')
+if not BACKEND_URL.startswith('http'):
+    BACKEND_URL = f'http://{BACKEND_URL}'
 
 class StaticFileHandler(SimpleHTTPRequestHandler):
     """Serves static files and reverse-proxies API paths to the backend."""
@@ -64,7 +64,7 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
     def proxy_to_backend(self, method):
         """Forward a request to the backend and relay its response."""
         try:
-            backend_url = f"{BACKEND_HOST}{self.path}"
+            backend_url = f"{BACKEND_URL}{self.path}"
             logger.info(f"{method} {self.path} → {backend_url}")
             
             # Read request body for POST requests

@@ -36,7 +36,7 @@ DB_USER = os.getenv("DB_USER", "nuvolos")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "nuvolos")
 
 # Backend configuration
-BACKEND_HOST = os.getenv("BACKEND_HOST", "localhost")
+BACKEND_URL = os.getenv("BACKEND_URL", "localhost")
 BACKEND_PORT = os.getenv("BACKEND_PORT", "8500")
 
 # Frontend configuration
@@ -123,7 +123,7 @@ def get_document_count():
 def wait_for_backend(timeout=30):
     """Wait for backend to be ready."""
     print("Waiting for backend to be ready...")
-    backend_url = f"http://{BACKEND_HOST}:{BACKEND_PORT}/health"
+    backend_url = f"http://{BACKEND_URL}:{BACKEND_PORT}/health"
     
     for i in range(timeout):
         try:
@@ -181,7 +181,7 @@ def load_sample_data():
     
     # Read and load each document from CSV
     doc_count = 0
-    backend_url = f"http://{BACKEND_HOST}:{BACKEND_PORT}/documents"
+    backend_url = f"http://{BACKEND_URL}:{BACKEND_PORT}/documents"
     
     try:
         with open(SAMPLE_DATA_FILE, 'r', encoding='utf-8') as f:
@@ -259,14 +259,14 @@ def start_servers():
     print(f"Starting frontend server on port {FRONTEND_PORT}...")
     frontend_log = open(FRONTEND_LOG_FILE, 'w')
     # Construct full backend URL for the frontend proxy
-    backend_url = f"http://{BACKEND_HOST}:{BACKEND_PORT}"
+    backend_full_url = f"http://{BACKEND_URL}:{BACKEND_PORT}"
     frontend_process = subprocess.Popen(
         [sys.executable, "server.py"],
         cwd=FRONTEND_DIR,
         stdout=frontend_log,
         stderr=subprocess.STDOUT,
         env={**os.environ, **{
-            "BACKEND_HOST": backend_url
+            "BACKEND_URL": backend_full_url
         }}
     )
     
@@ -313,8 +313,8 @@ def main():
     
     # Success message
     print_colored(GREEN, "\n=== Setup Complete! ===\n")
-    print(f"Backend API: http://{BACKEND_HOST}:{BACKEND_PORT}")
-    print(f"API Documentation: http://{BACKEND_HOST}:{BACKEND_PORT}/docs")
+    print(f"Backend API: http://{BACKEND_URL}:{BACKEND_PORT}")
+    print(f"API Documentation: http://{BACKEND_URL}:{BACKEND_PORT}/docs")
     print(f"Frontend UI: http://localhost:{FRONTEND_PORT}")
     print()
     print(f"Backend logs: tail -f {BACKEND_LOG_FILE}")

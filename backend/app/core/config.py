@@ -16,7 +16,10 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "nuvolos")
 
 # Server
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8500"))
+# BACKEND_HOST: address for server binding (0.0.0.0 = all interfaces)
 BACKEND_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
+# BACKEND_URL: address for client connections (what the frontend uses to call the backend)
+BACKEND_URL = os.getenv("BACKEND_URL", "localhost")
 
 # Retrieval
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "768"))
