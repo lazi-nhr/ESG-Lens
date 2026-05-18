@@ -1,9 +1,9 @@
 from typing import List, Dict
 import logging
-import os
 import time
+import aiohttp
 
-from app.core.config import HF_MODEL, HF_HOME
+from app.core.config import HF_MODEL, HF_API_MODEL, HF_API_KEY, HF_HOME
 
 logger = logging.getLogger(__name__)
 
@@ -74,21 +74,46 @@ async def generate_answer(query: str, retrieved_docs: List[Dict]) -> str:
         return "No relevant documents found in the database."
     
     try:
-        result = _run_local_inference(query, retrieved_docs)
-        logger.info(f"Answer generated successfully | length={len(result)} characters")
+        logger.info("Attempting local inference...")
+        result = await _run_local_inference(query, retrieved_docs)
+        logger.info(f"Local inference successful | answer_length={len(result)} characters")
         logger.info("=== Answer Generation Complete ===")
         return result
     except Exception as e:
-        logger.error(f"Local inference failed: {type(e).__name__}: {str(e)}", exc_info=True)
-        logger.info("Falling back to placeholder answer")
+        logger.warning(f"Local inference failed: {type(e).__name__}: {str(e)}")
+        
+        # Fallback to HF Inference API if configured
+        if HF_API_KEY:
+            try:
+                logger.info("Falling back to HF Inference API...")
+                result = await _call_hf_api(query, retrieved_docs)
+                logger.info(f"HF API inference successful | answer_length={len(result)} characters")
+                logger.info("=== Answer Generation Complete (via HF API) ===")
+                return result
+            except Exception as api_error:
+                logger.error(f"HF API also failed: {type(api_error).__name__}: {str(api_error)}")
+        else:
+            logger.warning("HF_API_KEY not configured, cannot fallback to API")
+        
+        # Final fallback to placeholder
+        logger.info("Using placeholder answer")
         return _placeholder_answer(retrieved_docs)
 
-def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
+async def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
+    """
+    Run local inference using the loaded model and tokenizer.
+    
+    Args:
+        query: The user's question.
+        retrieved_docs: List of similar documents.
+    
+    Returns: LLM-generated answer.
+    """
     inference_start = time.time()
     logger.debug("Initializing model and tokenizer...")
     model, tokenizer = _get_model()
     
-    # Format context
+    # Format context from retrieved documents
     logger.debug("Formatting context from retrieved documents...")
     context_parts = []
     for i, doc in enumerate(retrieved_docs[:3], start=1):
@@ -96,30 +121,12 @@ def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
         context_parts.append(f"Excerpt {i}: {content}")
     context = "\n\n".join(context_parts)
     logger.debug(f"Context prepared: {len(context)} characters from {len(retrieved_docs)} documents")
-    
-    # Read template
-    logger.debug("Loading prompt template...")
-    prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "esg_report.md")
-    try:
-        with open(prompt_path, "r") as f:
-            template = f.read()
-        logger.debug(f"Template loaded: {len(template)} characters")
-    except Exception as e:
-        logger.error(f"Failed to load template from {prompt_path}: {type(e).__name__}: {str(e)}", exc_info=True)
-        raise
-        
-    # Extract company name dynamically out of the query string if possible, or leave a fallback
-    company_name = "ABB" if "ABB" in query else ("Roche" if "Roche" in query else "Target Company")
-    logger.debug(f"Extracted company name: {company_name}")
-    
-    formatted_prompt = template.format(company=company_name, criterion="Environmental", context=context)
-    logger.debug(f"Prompt formatted: {len(formatted_prompt)} characters")
 
-    # Use modern Chat Templates for instruction alignment
+    # Build messages for the model
     logger.debug("Building chat messages...")
     messages = [
-        {"role": "system", "content": "You are a professional ESG assistant. Generate comprehensive structured reports."},
-        {"role": "user", "content": formatted_prompt}
+        {"role": "system", "content": "You are a professional ESG assistant. Generate comprehensive structured reports based on the provided documents."},
+        {"role": "user", "content": f"Based on the following documents, provide a professional ESG evaluation response.\n\nDocuments:\n{context}\n\nQuestion: {query}\n\nResponse:"}
     ]
     logger.debug(f"Messages prepared: {len(messages)} messages")
     
@@ -156,9 +163,68 @@ def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
     logger.debug(f"Decoding completed in {decode_time:.2f}s | answer_length={len(answer)}")
     
     total_inference_time = time.time() - inference_start
-    logger.info(f"Total inference time: {total_inference_time:.2f}s (tokenization={tokenize_time:.2f}s, generation={generation_time:.2f}s, decoding={decode_time:.2f}s)")
+    logger.info(f"Total local inference time: {total_inference_time:.2f}s (tokenization={tokenize_time:.2f}s, generation={generation_time:.2f}s, decoding={decode_time:.2f}s)")
     
     return answer
+
+
+async def _call_hf_api(query: str, retrieved_docs: List[Dict]) -> str:
+    """
+    Fallback: Call Hugging Face Inference API for answer generation.
+    Used when local inference fails and HF_API_KEY is configured.
+    
+    Args:
+        query: The user's question.
+        retrieved_docs: List of similar documents.
+    
+    Returns: LLM-generated answer from HF API.
+    """
+    logger.info(f"HF API Model: {HF_API_MODEL}")
+    
+    # Build context
+    context_parts = []
+    for i, doc in enumerate(retrieved_docs[:3], start=1):
+        content = doc.get("content", "").strip()[:500]
+        context_parts.append(f"Document {i}: {content}")
+    context = "\n\n".join(context_parts)
+    
+    # Build prompt
+    prompt = f"""You are a professional ESG assistant. Based on the following documents, provide a professional ESG evaluation response.
+
+Documents:
+{context}
+
+Question: {query}
+
+Response:"""
+    
+    # Call HF Inference API
+    api_url = f"https://api-inference.huggingface.co/models/{HF_API_MODEL}"
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 500}}
+    
+    logger.debug(f"Calling HF API: {api_url}")
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(api_url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=60)) as resp:
+                logger.debug(f"HF API response status: {resp.status}")
+                if resp.status == 200:
+                    result = await resp.json()
+                    # HF returns list of dicts with 'generated_text'
+                    if isinstance(result, list) and len(result) > 0:
+                        generated = result[0].get("generated_text", "").strip()
+                        logger.debug(f"HF API generated: {len(generated)} characters")
+                        return generated
+                    logger.warning(f"Unexpected HF API response format: {result}")
+                    return str(result)
+                else:
+                    error_text = await resp.text()
+                    logger.error(f"HF API error ({resp.status}): {error_text}")
+                    raise Exception(f"HF API error ({resp.status}): {error_text}")
+    except aiohttp.ClientError as e:
+        logger.error(f"Failed to connect to HF API: {type(e).__name__}: {str(e)}")
+        raise
+
 
 def _placeholder_answer(retrieved_docs: List[Dict]) -> str:
     logger.info("Using placeholder answer (fallback)")

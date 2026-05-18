@@ -31,7 +31,10 @@ MAX_TOP_K = int(os.getenv("MAX_TOP_K", "100"))
 DEFAULT_FORMAT = "markdown"  # "markdown" | "text"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface")
 
-# Hardcoding Falcon-7b-instruct and your API key as direct fallbacks
-HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-1.5B-Instructt")
-HF_API_KEY = os.getenv("HF_API_KEY", "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") # attention: do not hardcode API keys in production code! Use environment variables or secret management.
+# Local model for inference (runs on Tesla T4)
+HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-7B")
+# Fallback API model for inference (if local model fails)
+HF_API_MODEL = os.getenv("HF_API_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+# Hugging Face API authentication (for embeddings and fallback inference)
+HF_API_KEY = os.getenv("HF_API_KEY", "")
 HF_HOME = os.getenv("HF_HOME", "/files/.hf_cache")
