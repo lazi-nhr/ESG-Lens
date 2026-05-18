@@ -1,5 +1,6 @@
 from typing import List, Dict
-import logging, os
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ def _get_model():
         _model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME, 
             cache_dir=CACHE_DIR, 
-            device_map="cpu", # Keeps it on Nuvulos CPU
+            device_map="auto", # automatically use GPU if available
             torch_dtype="auto"
         )
         logger.info("Model ready.")
