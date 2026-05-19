@@ -333,3 +333,251 @@ button.download-btn svg {
     width: 18px;
     height: 18px;
 }
+
+/* ============================================================================
+   RESPONSIVE DESIGN - MOBILE & TABLET
+   ============================================================================ */
+
+/* --- TABLET: 600px - 900px --- */
+@media (max-width: 900px) {
+    body {
+        padding: 15px;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    .header {
+        margin-bottom: 30px;
+    }
+
+    .header .logo {
+        max-width: 300px;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .card h2 {
+        font-size: 1.3em;
+    }
+
+    button.theme-toggle {
+        top: 15px;
+        right: 15px;
+        padding: 10px 24px;
+        font-size: 14px;
+    }
+
+    .eval-row {
+        gap: 12px;
+    }
+
+    .eval-row .form-group {
+        flex: 1 1 200px;
+    }
+
+    button.primary-btn {
+        padding: 10px 24px;
+        font-size: 15px;
+    }
+
+    .report-output {
+        max-height: 400px;
+        padding: 15px;
+        font-size: 14px;
+    }
+
+    .report-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    button.download-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+/* --- MOBILE: < 600px --- */
+@media (max-width: 600px) {
+    * {
+        /* Improve touch target sizes on mobile */
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+        /* Prevent font scaling on orientation change */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    .header {
+        margin-bottom: 20px;
+    }
+
+    .header .logo {
+        max-width: 200px;
+        margin-bottom: 15px;
+    }
+
+    button.theme-toggle {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+        padding: 8px 16px;
+        font-size: 13px;
+        width: auto;
+    }
+
+    .card {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .card h2 {
+        font-size: 1.2em;
+        margin-bottom: 12px;
+    }
+
+    /* Stack all form elements vertically */
+    .eval-row {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .eval-row .form-group {
+        flex: 1 1 auto;
+        margin-bottom: 0;
+    }
+
+    .eval-row .action-group {
+        flex: 1 1 auto;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 12px;
+        font-size: 16px; /* Prevents auto-zoom on iOS */
+        border-radius: 4px;
+    }
+
+    button.primary-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 14px;
+        border-radius: 4px;
+        /* Minimum touch target size: 48x48px */
+        min-height: 48px;
+    }
+
+    /* Report output box */
+    .report-output {
+        max-height: 250px;
+        padding: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        border-radius: 4px;
+    }
+
+    .report-output h1 {
+        font-size: 1.2em;
+        margin: 10px 0 6px;
+    }
+
+    .report-output h2 {
+        font-size: 1.1em;
+        margin: 10px 0 6px;
+    }
+
+    .report-output h3 {
+        font-size: 1em;
+        margin: 8px 0 4px;
+    }
+
+    .report-output p {
+        margin: 8px 0 6px;
+    }
+
+    .report-output ul,
+    .report-output ol {
+        margin: 8px 0 6px 16px;
+    }
+
+    .report-output li {
+        margin-bottom: 4px;
+    }
+
+    .report-output code {
+        font-size: 12px;
+        padding: 2px 4px;
+        background: var(--input-bg);
+        border-radius: 3px;
+    }
+
+    .report-output pre {
+        padding: 10px;
+        margin: 8px 0;
+        font-size: 11px;
+        border-radius: 3px;
+        overflow-x: auto;
+    }
+
+    .report-output blockquote {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    /* Report header */
+    .report-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+        margin-bottom: 10px;
+    }
+
+    .report-header h2 {
+        font-size: 1.1em;
+        margin-bottom: 0;
+    }
+
+    button.download-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 13px;
+        min-height: 48px;
+    }
+
+    button.download-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Custom scrollbar for mobile - slightly wider for easier scrolling */
+    .report-output::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .report-output::-webkit-scrollbar-thumb {
+        border-radius: 3px;
+    }
+}
