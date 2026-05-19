@@ -1,7 +1,77 @@
-# nuvolos-examples-rag
+# esg rag system
 
-A minimal Retrieval Augmented Generation (RAG) example running on Nuvolos.
-Demonstrates how a frontend, backend, and database communicate over an internal network.
+A Retrieval Augmented Generation (RAG) system for ESG Reporting.
+
+## Quick start
+
+### 1. Start the database
+
+Just start the database app. You might need to connect to it from another container to set up your DB schema, or you might you an ORM and a migrator (such as sqlalchemy and alembic in python or prisma for nodejs/typescript for example).
+
+### 2. Install dependencies
+
+```bash
+cd backend                 # navigate to backend root
+
+pip install -r requirements.txt
+```
+
+### 2a. Full Stack Running
+
+```bash
+cd /path/to/esg-reporting-rag-system  # navigate to project root
+
+python setup.py                       # checks DB, loads sample data, starts both servers
+
+python cleanup.py                     # stops servers, clears documents, removes logs
+```
+
+(Bash equivalents: `./setup.sh` / `./cleanup.sh`)
+
+### 2b. Backend Running
+
+In the backend app:
+
+```bash
+cd backend                  # navigate to backend root
+
+python main.py              # starts on port 8500
+# or
+python start_backend.py     # checks DB, starts FastAPI on port 8500
+
+python stop_backend.py      # stops server
+```
+
+
+### 2c. Frontend Running
+
+In the frontend app:
+
+```bash
+cd frontend
+
+python start_frontend.py    # starts reverse-proxy server on port 3000
+
+python stop_frontend.py     # stops server
+```
+
+### 3. Open Frontend
+
+Open the VS Code Server URL for port 3000 in your browser.
+
+1. In the bottom panel of your VS Code interface (where you see the Terminal), look for a tab labeled Ports.
+
+2. Look for the row where the Port is 3000.
+
+3. Click the link in the "Forwarded Address" column.
+
+
+### 4. View logs
+
+```bash
+tail -f /tmp/backend.log
+tail -f /tmp/frontend.log
+```
 
 ## How networking works on Nuvolos
 
@@ -57,62 +127,6 @@ resolve or reach it. So the frontend server accepts the API request from the
 browser and forwards it to the backend over the internal network. This is
 exactly what tools like Nginx and API gateways do in production.
 
-## Quick start
-
-### 1. Start the database
-
-Just start the database app. You might need to connect to it from another container to set up your DB schema, or you might you an ORM and a migrator (such as sqlalchemy and alembic in python or prisma for nodejs/typescript for example).
-
-
-### 2. Start the backend
-
-In the backend app:
-
-```bash
-cd backend
-python3 start_backend.py     # checks DB, starts FastAPI on port 8500
-```
-
-### 3. Start the frontend
-
-In the frontend app:
-
-```bash
-cd frontend
-python3 start_frontend.py    # starts reverse-proxy server on port 3000
-```
-
-Open the VS Code Server URL for port 3000 in your browser.
-
-1. In the bottom panel of your VS Code interface (where you see the Terminal), look for a tab labeled Ports.
-
-2. Look for the row where the Port is 3000.
-
-3. Click the link in the "Forwarded Address" column.
-
-### 3. Stop everything
-
-```bash
-cd backend  && python3 stop_backend.py
-cd frontend && python3 stop_frontend.py
-```
-
-### Full-stack shortcut
-
-```bash
-python3 setup.py     # checks DB, loads sample data, starts both servers
-python3 cleanup.py   # stops servers, clears documents, removes logs
-```
-
-(Bash equivalents: `./setup.sh` / `./cleanup.sh`)
-
-### View logs
-
-```bash
-tail -f /tmp/backend.log
-tail -f /tmp/frontend.log
-```
-
 ## How the pieces fit together
 
 | Component | Port | Hostname | Role |
@@ -129,6 +143,7 @@ The frontend decides what to proxy based on the URL path:
 | `/health`              | Forwards to `backend:8500/health`  |
 | `/documents`           | Forwards to `backend:8500/documents` |
 | `/query`               | Forwards to `backend:8500/query`   |
+| `/evaluate`            | Forwards to `backend:8500/evaluate` |
 
 ## API endpoints
 
@@ -139,6 +154,7 @@ The frontend decides what to proxy based on the URL path:
 | POST   | `/documents`| Add a document           |
 | GET    | `/documents`| List all documents       |
 | POST   | `/query`    | Vector-similarity search |
+| EVALUATE | `/evaluate` | Run RAG evaluation     |
 
 Test from the terminal (inside the backend pod, or any pod on the same subnet):
 
@@ -159,32 +175,147 @@ curl -X POST http://localhost:8500/query \
 ```
 .
 ├── backend/
-│   ├── main.py              # FastAPI app (documents + vector search)
-│   ├── requirements.txt
-│   ├── start_backend.py     # Start script (checks DB, launches server)
-│   └── stop_backend.py      # Stop script
+│   ├── app/
+│   │   ├── api/              # API routes (health, documents, query, evaluate)
+│   │   ├── core/             # Configuration and error handling
+│   │   ├── db/               # Database connection, schemas, repositories
+│   │   ├── llm/              # LLM integration for answer generation
+│   │   ├── retrieval/        # Vector search and similarity retrieval
+│   │   ├── services/         # Business logic (evaluate_service)
+│   │   ├── formatting/       # Report formatting and rendering
+│   │   └── main.py           # FastAPI app setup
+│   ├── scripts/
+│   │   ├── query_esg_evaluation.py   # API-based query script
+│   │   ├── query_database.py         # Direct database query script
+│   │   ├── batch_evaluate.py         # Batch evaluation script
+│   │   ├── seed_db.py                # Load PDFs into database
+│   │   ├── cli.py                    # CLI utilities
+│   │   ├── evaluations_example.json  # Example evaluation configs
+│   │   ├── quickstart.sh             # Interactive quick-start menu
+│   │   └── README.md                 # Query scripts documentation
+│   ├── main.py               # Entry point (imports from app.main)
+│   ├── requirements.txt       # Python dependencies
+│   ├── start_backend.py       # Start script (checks DB, launches server on :8500)
+│   └── stop_backend.py        # Stop script
 ├── frontend/
-│   ├── index.html           # Single-page UI
-│   ├── server.py            # HTTP server + reverse proxy to backend
-│   ├── start_frontend.py
-│   └── stop_frontend.py
-├── setup.py / setup.sh      # One-command full-stack start
-├── cleanup.py / cleanup.sh  # One-command full-stack teardown
-├── sample_data.csv           # 10 demo documents loaded on first run
-├── STORY.md                  # Narrative walkthrough
-└── README.md
+│   ├── index.html            # Single-page UI
+│   ├── server.py             # HTTP server + reverse proxy to backend
+│   ├── start_frontend.py      # Start script (launches server on :3000)
+│   └── stop_frontend.py       # Stop script
+├── data/
+│   ├── raw_pdfs/             # PDF documents for seeding the database
+│   └── sample_data.csv        # Sample ESG documents (loaded on first run)
+├── setup.py / setup.sh        # One-command full-stack setup
+├── cleanup.py / cleanup.sh    # One-command full-stack teardown
+├── STORY.md                   # Narrative walkthrough
+└── README.md                  # This file
 ```
+
+## Query Scripts
+
+The `backend/scripts/` directory contains command-line tools for querying the ESG database:
+
+- **query_esg_evaluation.py** - HTTP API client for the FastAPI backend
+- **query_database.py** - Direct database queries with vector/full-text search
+- **batch_evaluate.py** - Batch process multiple companies and criteria
+- **quickstart.sh** - Interactive menu to run example queries
+
+See [backend/scripts/README.md](backend/scripts/README.md) for detailed usage and examples.
 
 ## Technical notes
 
 ### Embeddings
 
-This demo uses a toy character-frequency embedding (384 dimensions) so it runs
-without any external API keys. For real use, swap `create_simple_embedding()`
-in `backend/main.py` with a proper model (e.g. `sentence-transformers`,
-OpenAI embeddings, etc.).
+The system uses **Sentence Transformers** (all-MiniLM-L6-v2, 384 dimensions) for document and query embeddings. Switch models in `app/core/config.py`:
 
-### RAG response
+```python
+# In requirements.txt: sentence-transformers==3.0.1
+# In config: EMBEDDING_MODEL = "all-MiniLM-L6-v2" or any HuggingFace model
+```
 
-Similarly, `generate_simple_answer()` just returns the top document. Plug in
-an LLM (OpenAI, Anthropic, open-source via Hugging Face) for real generation.
+For production, consider:
+- Larger models (all-mpnet-base-v2, 768 dim) for better quality
+- OpenAI embeddings API for superior performance
+- Cached embeddings for faster inference
+
+### LLM Integration
+
+The system supports multiple LLM providers via `app/llm/generator.py`:
+
+- **HuggingFace Inference API** (default, configurable via `HF_API_KEY`)
+- **OpenAI** (swap `generate_answer()` implementation)
+- **Open-source models** (Mistral, Llama via HuggingFace)
+
+Configure in `.env`:
+```bash
+LLM_PROVIDER=huggingface
+HF_MODEL=gpt2
+HF_API_KEY=your_api_key_here
+```
+
+### Vector Database
+
+Uses **PostgreSQL + pgvector** for:
+- Vector similarity search (cosine distance)
+- Hybrid search (vector + full-text keywords)
+- Indexed HNSW for sub-second search on millions of documents
+
+### Evaluation Reports
+
+The `/evaluate` endpoint generates structured ESG reports with:
+- Retrieved document context
+- LLM-generated assessment
+- Markdown or plain-text formatting
+- Configurable output per company/criterion
+
+## Database Management
+
+### Initialize Database
+
+The database is automatically initialized on first run:
+
+```bash
+python setup.py  # Initializes DB, creates tables, loads sample data
+```
+
+Or manually:
+
+```bash
+cd backend
+python start_backend.py  # Creates tables on startup if they don't exist
+```
+
+### Seed with Documents
+
+Load PDF documents into the database:
+
+```bash
+cd backend/scripts
+python seed_db.py  # Loads all PDFs from data/raw_pdfs/
+```
+
+### Clear Documents
+
+Delete all documents but keep tables:
+
+```bash
+python -c "
+import psycopg2
+conn = psycopg2.connect(host='localhost', port=5432, database='nuvolos', user='nuvolos', password='nuvolos')
+cur = conn.cursor()
+cur.execute('DELETE FROM documents;')
+conn.commit()
+cur.close()
+conn.close()
+print('✅ All documents deleted')
+"
+```
+
+### Reset Database
+
+Drop and recreate all tables:
+
+```bash
+python cleanup.py  # Stops servers, clears all data, removes logs
+python setup.py    # Reinitializes and starts fresh
+```
