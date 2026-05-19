@@ -54,7 +54,7 @@ function renderMarkdownInto(element, markdownText) {
 }
 
 function typeMarkdownInto(element, markdownText, options = {}) {
-    const charsPerSecond = options.charsPerSecond ?? 10; 
+    const charsPerSecond = options.charsPerSecond ?? 200; 
     const intervalMs = options.intervalMs ?? 30;
     const minCharsPerTick = options.minCharsPerTick ?? 2;
     const renderEveryTicks = options.renderEveryTicks ?? 1;
