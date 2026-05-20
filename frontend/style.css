@@ -339,6 +339,8 @@ button.download-btn svg {
    ============================================================================ */
 
 /* --- TABLET: 600px - 900px --- */
+
+/*
 @media (max-width: 900px) {
     body {
         padding: 15px;
@@ -399,6 +401,83 @@ button.download-btn svg {
     button.download-btn {
         padding: 10px 20px;
         font-size: 14px;
+    }
+}*/
+
+/* --- TABLET: 600px - 900px --- */
+@media (max-width: 900px) {
+    body {
+        padding: 15px;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    .header {
+        margin-bottom: 30px;
+    }
+
+    .header .logo {
+        max-width: 300px;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .card h2 {
+        font-size: 1.3em;
+        margin-bottom: 8px;
+    }
+
+    button.theme-toggle {
+        top: 15px;
+        right: 15px;
+        padding: 10px 24px;
+        font-size: 14px;
+    }
+
+    /* FIX: Force a clean vertical stack to prevent the huge stretching gaps */
+    .eval-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Make sure the form groups and buttons take full width without weird flex-basis math */
+    .eval-row .form-group {
+        width: 100%;
+        margin-bottom: 0; /* Let the 'gap' property handle the spacing safely */
+    }
+
+    .eval-row .action-group {
+        width: 100%;
+    }
+
+    button.primary-btn {
+        padding: 12px 24px;
+        font-size: 15px;
+        width: 100%; /* Makes the button look neat if it drops to its own line */
+    }
+
+    .report-output {
+        max-height: 400px;
+        padding: 15px;
+        font-size: 14px;
+    }
+
+    /* FIX 4: Ensure the header and PDF button align nicely on medium screens */
+    .report-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    button.download-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        width: auto;
     }
 }
 
