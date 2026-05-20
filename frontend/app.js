@@ -151,17 +151,14 @@ document.getElementById('esgEvalForm').addEventListener('submit', async (e) => {
 
 // --- Clean PDF Generation Logic ---
 document.getElementById('downloadPdfBtn').addEventListener('click', () => {
-    // 1. Check if we actually have a report intercepted from the backend
     if (!currentMarkdownReport) {
         alert("Please generate a complete report before downloading.");
         return;
     }
 
-    // 2. Create an INVISIBLE "piece of paper" in the computer's memory
     const printDocument = document.createElement('div');
     
-    // 3. Style it like a real printed document, ignoring the website's dark mode
-    // We add padding here to act as the margins of the PDF page
+    // 1. Basic document styling
     printDocument.style.padding = '20mm'; 
     printDocument.style.color = 'black';
     printDocument.style.backgroundColor = 'white';
@@ -169,20 +166,36 @@ document.getElementById('downloadPdfBtn').addEventListener('click', () => {
     printDocument.style.fontSize = '14px';
     printDocument.style.lineHeight = '1.6';
 
-    // 4. Convert the raw Markdown into clean HTML (bolding, lists, etc.) 
-    // We use the exact same libraries your UI uses!
-    const formattedHtml = window.DOMPurify.sanitize(window.marked.parse(currentMarkdownReport));
-    printDocument.innerHTML = formattedHtml;
+    // 2. Add Smart Page Break CSS
+    // This tells the PDF NOT to slice paragraphs in half, and keeps headers attached to their text
+    const styleBlock = document.createElement('style');
+    styleBlock.innerHTML = `
+        h1, h2, h3 { page-break-after: avoid; }
+        p, li, pre, blockquote { page-break-inside: avoid; }
+        .page-break { page-break-before: always; }
+    `;
+    printDocument.appendChild(styleBlock);
 
-    // 5. Configure the PDF settings
+    // 3. Add Your Logo
+    const logoHtml = `<img src="logo.png" style="max-width: 200px; margin-bottom: 20px; display: block;" />`;
+
+    // 4. Parse the Markdown
+    const formattedHtml = window.DOMPurify.sanitize(window.marked.parse(currentMarkdownReport));
+    
+    // 5. Combine the logo and the report HTML into our invisible document
+    // We put the logo inside a div to keep it neatly at the top
+    printDocument.innerHTML += `<div>${logoHtml}</div>` + formattedHtml;
+
+    // 6. Configure html2pdf with the new pagebreak rules
     const opt = {
-        margin:       0, // Set to 0 because we handle margins using CSS padding above
+        margin:       0, 
         filename:     'ESG_Evaluation_Report.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 }, // High scale ensures crisp, readable text
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas:  { scale: 2, useCORS: true }, // useCORS allows loading external/local images
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        // This line activates the CSS page-break rules we wrote in step 2!
+        pagebreak:    { mode: ['css', 'legacy'] } 
     };
 
-    // 6. Generate the PDF directly from the INVISIBLE document!
     html2pdf().set(opt).from(printDocument).save();
 });
