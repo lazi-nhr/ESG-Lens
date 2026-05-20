@@ -48,6 +48,51 @@ def move_to_processed(pdf_path: Path):
         logger.error(f"Failed to move {pdf_path.name}: {e}")
 
 
+def parse_filename(filename: str):
+    """
+    Parse PDF filename to extract company, report title, and year.
+    Expected format: CompanyName_ReportType_Year.pdf
+    
+    Examples:
+    - ABB_Sustainability Statement_2025.pdf → ('ABB', 'Sustainability Statement', 2025)
+    - Adidas_Annual Report_2024.pdf → ('Adidas', 'Annual Report', 2024)
+    - Bank of China_Sustainability Report_2025.pdf → ('Bank of China', 'Sustainability Report', 2025)
+    """
+    try:
+        # Remove .pdf extension
+        name_without_ext = filename.replace('.pdf', '')
+        
+        # Split by last underscore to extract year
+        parts = name_without_ext.rsplit('_', 1)
+        if len(parts) != 2:
+            logger.warning(f"  ⚠ Could not parse filename: {filename}")
+            return None, None, None
+        
+        left_part, year_str = parts
+        
+        # Try to convert year to integer
+        try:
+            year = int(year_str)
+        except ValueError:
+            logger.warning(f"  ⚠ Invalid year in filename {filename}: {year_str}")
+            return None, None, None
+        
+        # Split company and report title by first underscore or space
+        # Look for pattern: CompanyName_ReportType or CompanyName ReportType
+        if '_' in left_part:
+            company, report_title = left_part.split('_', 1)
+        else:
+            # Fallback: use the whole thing as company name
+            company = left_part
+            report_title = "Document"
+        
+        return company.strip(), report_title.strip(), year
+        
+    except Exception as e:
+        logger.error(f"  ✗ Error parsing filename '{filename}': {e}")
+        return None, None, None
+
+
 def seed_database():
     """Load all PDFs from data folder into database."""
     logger.info("Initializing database...")
@@ -83,6 +128,11 @@ def seed_database():
             logger.info(f"Processing {pdf_path.name}...")
             
             try:
+                # Parse filename to extract metadata
+                company, report_title, year = parse_filename(pdf_path.name)
+                if company:
+                    logger.debug(f"  Parsed: {company} | {report_title} | {year}")
+                
                 # Extract text from PDF
                 reader = PdfReader(str(pdf_path))
                 page_texts = [page.extract_text() for page in reader.pages]
@@ -107,7 +157,7 @@ def seed_database():
                     if content.strip():
                         logger.debug("  Creating embedding for chunk...")
                         embedding = create_embedding(content)
-                        DocumentRepository.add(content, embedding)
+                        DocumentRepository.add(content, embedding, company, report_title, year)
                         chunks_inserted += 1
                         total_chunks += 1
                 

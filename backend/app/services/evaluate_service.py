@@ -45,9 +45,9 @@ async def evaluate(
         # Retrieve similar documents
         logger.info("Retrieving similar documents...")
         retrieval_start = time.time()
-        retrieved_docs = await retrieve_similar(enriched_query, top_k)
+        retrieved_docs = await retrieve_similar(enriched_query, top_k, company)
         retrieval_time = time.time() - retrieval_start
-        logger.info(f"Retrieved {len(retrieved_docs)} documents in {retrieval_time:.2f}s")
+        logger.info(f"Retrieved {len(retrieved_docs)} documents in {retrieval_time:.2f}s (company filter: {company})")
         
         if retrieved_docs:
             for i, doc in enumerate(retrieved_docs[:3], 1):
