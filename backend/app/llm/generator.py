@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict
 import logging
 import time
@@ -12,6 +13,26 @@ MODEL_NAME = HF_MODEL
 CACHE_DIR = HF_HOME
 _model = None
 _tokenizer = None
+_prompt_template = None
+
+
+def _get_prompt_template() -> str:
+    global _prompt_template
+    if _prompt_template is None:
+        prompt_path = Path(__file__).resolve().parent / "prompts" / "esg_report.md"
+        _prompt_template = prompt_path.read_text(encoding="utf-8")
+    return _prompt_template
+
+
+def _build_prompt(company: str, criterion: str, question: str, retrieved_docs: List[Dict]) -> str:
+    context_parts = []
+    for i, doc in enumerate(retrieved_docs[:3], start=1):
+        content = doc.get("content", "").strip()[:800]
+        context_parts.append(f"Excerpt {i}: {content}")
+    context = "\n\n".join(context_parts)
+
+    template = _get_prompt_template()
+    return template.format(company=company, criterion=criterion, question=question, context=context)
 
 def _get_model():
     global _model, _tokenizer
@@ -64,7 +85,12 @@ def _get_model():
     
     return _model, _tokenizer
 
-async def generate_answer(query: str, retrieved_docs: List[Dict]) -> str:
+async def generate_answer(
+    query: str,
+    retrieved_docs: List[Dict],
+    company: str = "",
+    criterion: str = "",
+) -> str:
     logger.info("=== Answer Generation Started ===")
     logger.info(f"Query: {query[:100]}..." if len(query) > 100 else f"Query: {query}")
     logger.info(f"Documents available: {len(retrieved_docs)}")
@@ -75,7 +101,7 @@ async def generate_answer(query: str, retrieved_docs: List[Dict]) -> str:
     
     try:
         logger.info("Attempting local inference...")
-        result = await _run_local_inference(query, retrieved_docs)
+        result = await _run_local_inference(query, retrieved_docs, company=company, criterion=criterion)
         logger.info(f"Local inference successful | answer_length={len(result)} characters")
         logger.info("=== Answer Generation Complete ===")
         return result
@@ -86,7 +112,7 @@ async def generate_answer(query: str, retrieved_docs: List[Dict]) -> str:
         if HF_API_KEY:
             try:
                 logger.info("Falling back to HF Inference API...")
-                result = await _call_hf_api(query, retrieved_docs)
+                result = await _call_hf_api(query, retrieved_docs, company=company, criterion=criterion)
                 logger.info(f"HF API inference successful | answer_length={len(result)} characters")
                 logger.info("=== Answer Generation Complete (via HF API) ===")
                 return result
@@ -99,7 +125,12 @@ async def generate_answer(query: str, retrieved_docs: List[Dict]) -> str:
         logger.info("Using placeholder answer")
         return _placeholder_answer(retrieved_docs)
 
-async def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
+async def _run_local_inference(
+    query: str,
+    retrieved_docs: List[Dict],
+    company: str = "",
+    criterion: str = "",
+) -> str:
     """
     Run local inference using the loaded model and tokenizer.
     
@@ -113,20 +144,14 @@ async def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
     logger.debug("Initializing model and tokenizer...")
     model, tokenizer = _get_model()
     
-    # Format context from retrieved documents
-    logger.debug("Formatting context from retrieved documents...")
-    context_parts = []
-    for i, doc in enumerate(retrieved_docs[:3], start=1):
-        content = doc.get("content", "").strip()[:800]
-        context_parts.append(f"Excerpt {i}: {content}")
-    context = "\n\n".join(context_parts)
-    logger.debug(f"Context prepared: {len(context)} characters from {len(retrieved_docs)} documents")
+    prompt = _build_prompt(company=company, criterion=criterion, question=query, retrieved_docs=retrieved_docs)
+    logger.debug(f"Prompt prepared: {len(prompt)} characters from {len(retrieved_docs)} documents")
 
     # Build messages for the model
     logger.debug("Building chat messages...")
     messages = [
-        {"role": "system", "content": "You are a professional ESG assistant. Generate comprehensive structured reports based on the provided documents."},
-        {"role": "user", "content": f"Based on the following documents, provide a professional ESG evaluation response.\n\nDocuments:\n{context}\n\nQuestion: {query}\n\nResponse:"}
+        {"role": "system", "content": "You are a professional ESG assistant. Follow the user's report format exactly and do not add extra sections."},
+        {"role": "user", "content": prompt}
     ]
     logger.debug(f"Messages prepared: {len(messages)} messages")
     
@@ -168,7 +193,12 @@ async def _run_local_inference(query: str, retrieved_docs: List[Dict]) -> str:
     return answer
 
 
-async def _call_hf_api(query: str, retrieved_docs: List[Dict]) -> str:
+async def _call_hf_api(
+    query: str,
+    retrieved_docs: List[Dict],
+    company: str = "",
+    criterion: str = "",
+) -> str:
     """
     Fallback: Call Hugging Face Inference API for answer generation.
     Used when local inference fails and HF_API_KEY is configured.
@@ -181,22 +211,7 @@ async def _call_hf_api(query: str, retrieved_docs: List[Dict]) -> str:
     """
     logger.info(f"HF API Model: {HF_API_MODEL}")
     
-    # Build context
-    context_parts = []
-    for i, doc in enumerate(retrieved_docs[:3], start=1):
-        content = doc.get("content", "").strip()[:500]
-        context_parts.append(f"Document {i}: {content}")
-    context = "\n\n".join(context_parts)
-    
-    # Build prompt
-    prompt = f"""You are a professional ESG assistant. Based on the following documents, provide a professional ESG evaluation response.
-
-Documents:
-{context}
-
-Question: {query}
-
-Response:"""
+    prompt = _build_prompt(company=company, criterion=criterion, question=query, retrieved_docs=retrieved_docs)
     
     # Call HF Inference API
     api_url = f"https://api-inference.huggingface.co/models/{HF_API_MODEL}"

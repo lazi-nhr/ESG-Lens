@@ -100,7 +100,12 @@ async def evaluate(
         # Generate assessment
         logger.info("Generating assessment...")
         generation_start = time.time()
-        assessment = await generate_answer(base_query, retrieved_docs)
+        assessment = await generate_answer(
+            base_query,
+            retrieved_docs,
+            company=company,
+            criterion=criterion_config["name"],
+        )
         generation_time = time.time() - generation_start
         logger.info(f"Assessment generated in {generation_time:.2f}s")
         logger.debug(f"Assessment preview: {assessment[:200]}..." if len(assessment) > 200 else f"Assessment: {assessment}")
