@@ -3,7 +3,12 @@ Query formatting: construct enriched queries for semantic search.
 """
 
 
-def build_enriched_query(company: str = None, criterion: str = None, query: str = None) -> str:
+def build_enriched_query(
+    company: str = None,
+    criterion: str = None,
+    query: str = None,
+    retrieval_bias: list[str] | None = None,
+) -> str:
     """
     Build an enriched query by prepending company and criterion context.
     
@@ -23,10 +28,15 @@ def build_enriched_query(company: str = None, criterion: str = None, query: str 
     if criterion:
         parts.append(criterion.lower())
     
-    #if company:
-    #    parts.append(company)
-    
     if query:
         parts.append(query)
+
+    if retrieval_bias:
+        bias_terms = [term for term in retrieval_bias if term]
+        if bias_terms:
+            parts.append("Focus terms: " + ", ".join(bias_terms))
+
+    if company:
+        parts.append(f"Company: {company}")
     
     return " - ".join(parts).strip() if parts else ""

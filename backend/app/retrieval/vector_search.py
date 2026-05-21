@@ -9,7 +9,11 @@ from app.core.config import DEFAULT_TOP_K
 from app.core.errors import RetrievalError
 
 
-async def retrieve_similar(query_text: str, top_k: int = DEFAULT_TOP_K, company: str = None) -> List[Dict]:
+async def retrieve_similar(
+    query_text: str,
+    top_k: int = DEFAULT_TOP_K,
+    company: str = None,
+) -> List[Dict]:
     """
     Retrieve documents most similar to the query.
     

@@ -67,22 +67,22 @@ class DocumentRepository:
             cur = conn.cursor()
             
             # Build dynamic WHERE clause based on company filter
-            where_clause = "WHERE embedding IS NOT NULL"
-            params = [query_embedding, query_embedding]
-            
+            where_clause = ["embedding IS NOT NULL"]
+            params = [query_embedding]
+
             if company:
-                where_clause += " AND company = %s"
+                where_clause.append("company = %s")
                 params.append(company)
-            
+
             query = f"""
                 SELECT id, content, company, report_title, year,
                        1 - (embedding <=> %s::vector) as similarity
                 FROM documents
-                {where_clause}
+                WHERE {' AND '.join(where_clause)}
                 ORDER BY embedding <=> %s::vector
                 LIMIT %s;
             """
-            params.append(top_k)
+            params.extend([query_embedding, top_k])
             
             cur.execute(query, params)
             results = cur.fetchall()

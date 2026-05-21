@@ -47,20 +47,47 @@ async def evaluate(
         logger.info(f"Criterion: {criterion_config['name']} | Output format: {criterion_config.get('output_format', 'narrative')}")
         logger.debug(f"Criterion instructions: {criterion_config.get('context_instructions', 'N/A')}")
         
+        retrieval_bias = criterion_config.get("retrieval_bias", [])
+
         # Use criterion's predefined question with company context
         criterion_question = criterion_config.get('question', '')
-        enriched_query = f"{criterion_question}\n\nCompany focus: {company}"
+        base_query = build_enriched_query(
+            company=company,
+            criterion=criterion,
+            query=criterion_question,
+        )
+        
+        retrieval_query = build_enriched_query(
+            company=company,
+            criterion=criterion,
+            query=criterion_question,
+            retrieval_bias=retrieval_bias,
+        )
         
         # Fallback to old method if criterion question is missing
         if not criterion_question:
-            enriched_query = build_enriched_query(company, criterion, query)
+            base_query = build_enriched_query(
+                company=company,
+                criterion=criterion,
+                query=query,
+            )
+            retrieval_query = build_enriched_query(
+                company=company,
+                criterion=criterion,
+                query=query,
+                retrieval_bias=retrieval_bias,
+            )
         
-        logger.debug(f"Query for vector search: {enriched_query[:200]}..." if len(enriched_query) > 200 else f"Query: {enriched_query}")
+        logger.debug(f"Query for vector search: {retrieval_query[:200]}..." if len(retrieval_query) > 200 else f"Query: {retrieval_query}")
 
         # Retrieve similar documents
         logger.info("Retrieving similar documents...")
         retrieval_start = time.time()
-        retrieved_docs = await retrieve_similar(enriched_query, top_k, company) # @todo: does company filter work correctly in retrieval?
+        retrieved_docs = await retrieve_similar(
+            retrieval_query,
+            top_k,
+            company,
+        )
         retrieval_time = time.time() - retrieval_start
         logger.info(f"Retrieved {len(retrieved_docs)} documents in {retrieval_time:.2f}s (company filter: {company})")
         
@@ -73,7 +100,7 @@ async def evaluate(
         # Generate assessment
         logger.info("Generating assessment...")
         generation_start = time.time()
-        assessment = await generate_answer(enriched_query, retrieved_docs)
+        assessment = await generate_answer(base_query, retrieved_docs)
         generation_time = time.time() - generation_start
         logger.info(f"Assessment generated in {generation_time:.2f}s")
         logger.debug(f"Assessment preview: {assessment[:200]}..." if len(assessment) > 200 else f"Assessment: {assessment}")
@@ -82,9 +109,9 @@ async def evaluate(
         logger.info(f"Formatting report as {format}...")
         formatting_start = time.time()
         if format == "markdown":
-            report = format_report_markdown(company, criterion, enriched_query, retrieved_docs, assessment) # @todo: add date and fix criterion description
+            report = format_report_markdown(company, criterion, base_query, retrieved_docs, assessment) # @todo: add date and fix criterion description
         else:
-            report = format_report_text(company, criterion, enriched_query, retrieved_docs, assessment)
+            report = format_report_text(company, criterion, base_query, retrieved_docs, assessment)
         formatting_time = time.time() - formatting_start
         logger.info(f"Report formatted in {formatting_time:.2f}s")
         logger.debug(f"Report size: {len(report)} characters")
@@ -95,7 +122,7 @@ async def evaluate(
         return {
             "company": company,
             "criterion": criterion,
-            "query": enriched_query,
+            "query": base_query,
             "retrieved_count": len(retrieved_docs),
             "report": report,
             "format": format,
