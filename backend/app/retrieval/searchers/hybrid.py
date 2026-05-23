@@ -4,7 +4,13 @@ from app.retrieval.searchers.base import BaseSearcher
 from app.retrieval.searchers.vector import VectorSearcher
 from app.retrieval.searchers.bm25 import BM25Searcher
 from app.retrieval.reranker import DocumentReranker
+import os
 
+# load environment variables
+import dotenv
+dotenv.load_dotenv()
+
+FUSION_CONSTANT = os.getenv("FUSION_CONSTANT", 60)
 
 class HybridSearcher(BaseSearcher):
     """
@@ -126,7 +132,7 @@ class HybridSearcher(BaseSearcher):
         Returns dict of {doc_id: {doc, hybrid_score}}
         """
         merged = {}
-        rrf_k = 60
+        rrf_k = FUSION_CONSTANT
         
         # 1. Apply RRF for BM25 Rankings
         for rank, doc in enumerate(bm25_results):
@@ -150,7 +156,7 @@ class HybridSearcher(BaseSearcher):
         Returns dict with bm25_score, vector_score, and hybrid_score.
         """
         merged = {}
-        rrf_k = 60
+        rrf_k = FUSION_CONSTANT
         
         # Initialize dictionary with base structure
         all_docs = {doc['id']: doc for doc in vector_results + bm25_results}
