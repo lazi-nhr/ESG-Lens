@@ -156,45 +156,87 @@ document.getElementById('downloadPdfBtn').addEventListener('click', () => {
         return;
     }
 
+    // 1. Frontend Text Fix: Safely force a new line without breaking Markdown bold tags!
+    // This looks for "Criterion:" (with or without bold asterisks) and safely drops a <br> before it.
+    let fixedMarkdown = currentMarkdownReport.replace(/(\*\*Criterion:\*\*|Criterion:)/g, '<br>$1');
+
     const printDocument = document.createElement('div');
     
-    // 1. Basic document styling
-    printDocument.style.padding = '20mm'; 
+    // 2. Basic document styling
     printDocument.style.color = 'black';
     printDocument.style.backgroundColor = 'white';
     printDocument.style.fontFamily = 'Arial, sans-serif';
     printDocument.style.fontSize = '14px';
     printDocument.style.lineHeight = '1.6';
 
-    // 2. Add Smart Page Break CSS
-    // This tells the PDF NOT to slice paragraphs in half, and keeps headers attached to their text
+    // 3. Add Spacing CSS (Fixed for stacked headers)
     const styleBlock = document.createElement('style');
     styleBlock.innerHTML = `
-        h1, h2, h3 { page-break-after: avoid; }
-        p, li, pre, blockquote { page-break-inside: avoid; }
-        .page-break { page-break-before: always; }
+        .section-box { margin-top: 30px; }
+        .section-box:first-child { margin-top: 0; }
+        
+        /* Only remove the top margin if the header is the very first item in the box */
+        .section-box > h1:first-child,
+        .section-box > h2:first-child,
+        .section-box > h3:first-child { margin-top: 0; }
+        
+        h2 { margin-bottom: 10px; }
+        h3 { margin-top: 15px; margin-bottom: 8px; }
     `;
     printDocument.appendChild(styleBlock);
 
-    // 3. Add Your Logo
-    const logoHtml = `<img src="logo.png" style="max-width: 200px; margin-bottom: 20px; display: block;" />`;
+    // 4. Add Your Logo
+    const logoHtml = `<img src="logo_pdf.png" style="float: right; max-width: 150px; margin-left: 20px; margin-bottom: 20px;" />`;
 
-    // 4. Parse the Markdown
-    const formattedHtml = window.DOMPurify.sanitize(window.marked.parse(currentMarkdownReport));
+    // 5. Parse the Markdown into a TEMPORARY container
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = window.DOMPurify.sanitize(window.marked.parse(fixedMarkdown));
+
+    // 6. Group sections into unbreakable boxes (Smarter Logic!)
+    const groupedContent = document.createElement('div');
+    groupedContent.className = 'report-content';
+    let currentSection = document.createElement('div');
     
-    // 5. Combine the logo and the report HTML into our invisible document
-    // We put the logo inside a div to keep it neatly at the top
-    printDocument.innerHTML += `<div>${logoHtml}</div>` + formattedHtml;
+    currentSection.className = 'section-box';
+    currentSection.style.pageBreakInside = 'avoid'; 
 
-    // 6. Configure html2pdf with the new pagebreak rules
+    let hasBodyContent = false; // Tracks if we actually have paragraphs/lists in the box
+
+    Array.from(tempDiv.children).forEach(child => {
+        const isHeader = child.tagName === 'H1' || child.tagName === 'H2' || child.tagName === 'H3';
+        
+        if (isHeader) {
+            // ONLY split into a new box if the current box actually has body text in it.
+            // This forces stacked headers (like H2 immediately followed by H3) to stay together!
+            if (currentSection.hasChildNodes() && hasBodyContent) {
+                groupedContent.appendChild(currentSection);
+                currentSection = document.createElement('div');
+                currentSection.className = 'section-box';
+                currentSection.style.pageBreakInside = 'avoid'; 
+                hasBodyContent = false; // Reset for the new box
+            }
+        } else {
+            hasBodyContent = true; // We hit a paragraph, list, or code block!
+        }
+        
+        currentSection.appendChild(child);
+    });
+    
+    // Catch the final section
+    if (currentSection.hasChildNodes()) {
+        groupedContent.appendChild(currentSection);
+    }
+
+    // 7. Combine the logo and grouped HTML
+    printDocument.innerHTML += logoHtml + groupedContent.outerHTML;
+
+    // 8. Configure html2pdf 
     const opt = {
-        margin:       0, 
+        margin:       20, 
         filename:     'ESG_Evaluation_Report.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true }, // useCORS allows loading external/local images
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        // This line activates the CSS page-break rules we wrote in step 2!
-        pagebreak:    { mode: ['css', 'legacy'] } 
+        html2canvas:  { scale: 2, useCORS: true }, 
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(printDocument).save();

@@ -352,7 +352,7 @@ button.download-btn svg {
     }
 
     body {
-        padding: 10px;
+        padding: 10px 30px;
     }
 
     .container {
@@ -413,9 +413,11 @@ button.download-btn svg {
     .form-group input,
     .form-group select,
     .form-group textarea {
-        padding: 12px;
-        font-size: 16px; /* Prevents auto-zoom on iOS */
+        /* Reduced vertical padding (8px) while keeping it wide enough (12px) on the sides */
+        padding: 6px 12px; 
+        font-size: 12px; /* Shrunk the text */
         border-radius: 4px;
+        height: auto; /* Ensures the box collapses cleanly around the new smaller padding */
     }
 
     button.primary-btn {
