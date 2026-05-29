@@ -19,6 +19,48 @@ ESG Reporting Generator is a Retrieval Augmented Generation system for producing
 
 For an example report, click here: [report.pdf](docs/report.pdf).
 
+Supported companies in the database:
+
+- Glencore
+- ABB
+- Nestlé
+- UBS
+- Lonza
+- Swiss Re
+- Swisscom
+- Givaudan
+- Novartis
+- Partners Group
+- Lindt & Sprüngli
+- Swatch
+- Roche
+- Logitech
+- Richemont
+- Zurich Insurance
+- Geberit
+- Holcim
+- Sika
+- Swiss Life
+- On
+- Amrize
+
+Available evaluation criteria:
+
+- Overall ESG Assessment
+- Environment (E) Summary
+- Social (S) Summary
+- Governance (G) Summary
+- Climate Risk Management
+- GHG Emissions & Metrics
+- Energy Transition & Renewables
+- Water & Biodiversity Stewardship
+- Supply Chain Sustainability
+- Labor Practices & Worker Rights
+- Diversity, Equity & Inclusion
+- Data Privacy & Cybersecurity
+- Anti-Corruption & Business Ethics
+- Disclosure, Targets & Reporting Quality
+
 ## Database
 
 The database contains reports from public companies. For this project, the corpus includes SMI companies and other reputable companies such as UBS, Roche, and Swatch. The documents cover annual reports, sustainability reports, compensation reports, and corporate governance reports from 2020 to 2025.
@@ -56,7 +98,7 @@ The frontend sends the selected company and evaluation criterion to the FastAPI 
 
 ## Quick Start
 
-### prerequisites
+### Prerequisites
 
 - Python
 - virtualenv
