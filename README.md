@@ -1,7 +1,5 @@
 <div align="center">
-	<object data="docs/images/logo.pdf" type="application/pdf" width="180" height="90">
-		<p><a href="docs/images/logo.pdf">ESG Lens logo</a></p>
-	</object>
+	<img src="docs/images/logo.png" alt="ESG Lens logo" width="200" />
 </div>
 
 # ESG Reporting Generator
@@ -11,7 +9,7 @@ ESG Reporting Generator is a Retrieval Augmented Generation system for producing
 ## Usage
 
 <div align="center">
-	<img src="docs/images/ui.png" alt="User interface" width="700" />
+	<img src="docs/images/ui.png" alt="User interface" width="300" />
 </div>
 
 1. Pick a company and an evaluation criterion in the frontend.
@@ -19,7 +17,7 @@ ESG Reporting Generator is a Retrieval Augmented Generation system for producing
 3. Wait for report generation, which typically takes around 15 seconds.
 4. Review the markdown report in the UI and save it as a PDF when needed.
 
-For an example report, click here: [report.pdf](docs/images/report.pdf).
+For an example report, click here: [report.pdf](docs/report.pdf).
 
 ## Database
 
@@ -28,9 +26,7 @@ The database contains reports from public companies. For this project, the corpu
 ## Architecture
 
 <div align="center">
-	<object data="docs/images/architecture.pdf" type="application/pdf" width="720" height="420">
-		<p><a href="docs/images/architecture.pdf">Architecture diagram</a></p>
-	</object>
+	<img src="docs/images/architecture.png" alt="Architecture diagram" width="200" />
 </div>
 
 
