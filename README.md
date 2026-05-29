@@ -1,27 +1,38 @@
-# ESG Reporting Generator
+<div align="center">
+	<object data="docs/images/logo.pdf" type="application/pdf" width="180" height="90">
+		<p><a href="docs/images/logo.pdf">ESG Lens logo</a></p>
+	</object>
+</div>
 
-<p align="center">
-	<img src="docs/images/logo.pdf" alt="Project logo" width="200" />
-</p>
+# ESG Reporting Generator
 
 ESG Reporting Generator is a Retrieval Augmented Generation system for producing structured ESG reports for public companies. The repository contains the full stack needed to ingest company reports, search them with hybrid retrieval, and generate standardized evaluation reports through a web interface.
 
 ## Usage
 
-![User interface](docs/images/ui.png)
+<div align="center">
+	<img src="docs/images/ui.png" alt="User interface" width="700" />
+</div>
 
 1. Pick a company and an evaluation criterion in the frontend.
 2. Press the **Evaluate** button.
 3. Wait for report generation, which typically takes around 15 seconds.
 4. Review the markdown report in the UI and save it as a PDF when needed.
 
-If available in your workspace, a sample output can be linked as [report.pdf](docs/images/report.pdf).
+For an example report, click here: [report.pdf](docs/images/report.pdf).
 
 ## Database
 
 The database contains reports from public companies. For this project, the corpus includes SMI companies and other reputable companies such as UBS, Roche, and Swatch. The documents cover annual reports, sustainability reports, compensation reports, and corporate governance reports from 2020 to 2025.
 
 ## Architecture
+
+<div align="center">
+	<object data="docs/images/architecture.pdf" type="application/pdf" width="720" height="420">
+		<p><a href="docs/images/architecture.pdf">Architecture diagram</a></p>
+	</object>
+</div>
+
 
 The system is organized into two pipelines.
 
@@ -41,7 +52,7 @@ For proper parsing, place PDFs in `data/raw_pdfs` and name them using the follow
 COMPANY NAME_DOCUMENT TITLE_YEAR.pdf
 ```
 
-You can also use the AI-based `renamer.py` script in `backend/scripts/` to standardize filenames before seeding.
+You can also use the LLM-based `renamer.py` script in `backend/scripts/` to standardize filenames before seeding.
 
 ### Generation pipeline
 
