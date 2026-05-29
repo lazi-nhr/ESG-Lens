@@ -21,45 +21,77 @@ For an example report, click here: [report.pdf](docs/report.pdf).
 
 Supported companies in the database:
 
-- Glencore
-- ABB
-- Nestlé
-- UBS
-- Lonza
-- Swiss Re
-- Swisscom
-- Givaudan
-- Novartis
-- Partners Group
-- Lindt & Sprüngli
-- Swatch
-- Roche
-- Logitech
-- Richemont
-- Zurich Insurance
-- Geberit
-- Holcim
-- Sika
-- Swiss Life
-- On
-- Amrize
+<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td>Glencore</td>
+		<td>ABB</td>
+		<td>Nestlé</td>
+		<td>UBS</td>
+	</tr>
+	<tr>
+		<td>Lonza</td>
+		<td>Swiss Re</td>
+		<td>Swisscom</td>
+		<td>Givaudan</td>
+	</tr>
+	<tr>
+		<td>Novartis</td>
+		<td>Partners Group</td>
+		<td>Lindt &amp; Sprüngli</td>
+		<td>Swatch</td>
+	</tr>
+	<tr>
+		<td>Roche</td>
+		<td>Logitech</td>
+		<td>Richemont</td>
+		<td>Zurich Insurance</td>
+	</tr>
+	<tr>
+		<td>Geberit</td>
+		<td>Holcim</td>
+		<td>Sika</td>
+		<td>Swiss Life</td>
+	</tr>
+	<tr>
+		<td>On</td>
+		<td>Amrize</td>
+		<td></td>
+		<td></td>
+	</tr>
+</table>
 
 Available evaluation criteria:
 
-- Overall ESG Assessment
-- Environment (E) Summary
-- Social (S) Summary
-- Governance (G) Summary
-- Climate Risk Management
-- GHG Emissions & Metrics
-- Energy Transition & Renewables
-- Water & Biodiversity Stewardship
-- Supply Chain Sustainability
-- Labor Practices & Worker Rights
-- Diversity, Equity & Inclusion
-- Data Privacy & Cybersecurity
-- Anti-Corruption & Business Ethics
-- Disclosure, Targets & Reporting Quality
+<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td>Overall ESG Assessment</td>
+		<td>Environment (E) Summary</td>
+	</tr>
+	<tr>
+		<td>Social (S) Summary</td>
+		<td>Governance (G) Summary</td>
+	</tr>
+	<tr>
+		<td>Climate Risk Management</td>
+		<td>GHG Emissions &amp; Metrics</td>
+	</tr>
+	<tr>
+		<td>Energy Transition &amp; Renewables</td>
+		<td>Water &amp; Biodiversity Stewardship</td>
+	</tr>
+	<tr>
+		<td>Supply Chain Sustainability</td>
+		<td>Labor Practices &amp; Worker Rights</td>
+	</tr>
+	<tr>
+		<td>Diversity, Equity &amp; Inclusion</td>
+		<td>Data Privacy &amp; Cybersecurity</td>
+	</tr>
+	<tr>
+		<td>Anti-Corruption &amp; Business Ethics</td>
+		<td>Disclosure, Targets &amp; Reporting Quality</td>
+	</tr>
+</table>
 
 ## Database
 
