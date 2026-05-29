@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="docs/images/logo.png" alt="ESG Lens logo" width="200" />
+	<img src="docs/images/logo.png" alt="ESG Lens logo" width="300" />
 </div>
 
 # ESG Reporting Generator
@@ -8,8 +8,8 @@ ESG Reporting Generator is a Retrieval Augmented Generation system for producing
 
 ## Usage
 
-<div align="right">
-	<img src="docs/images/ui.png" alt="User interface" width="300" />
+<div align="left">
+	<img src="docs/images/ui.png" alt="User interface" width="400" />
 </div>
 
 1. Pick a company and an evaluation criterion in the frontend.
@@ -25,8 +25,8 @@ The database contains reports from public companies. For this project, the corpu
 
 ## Architecture
 
-<div align="right">
-	<img src="docs/images/architecture.png" alt="Architecture diagram" width="200" />
+<div align="left">
+	<img src="docs/images/architecture.png" alt="Architecture diagram" width="400" />
 </div>
 
 
