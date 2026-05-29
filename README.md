@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="docs/images/logo.png" alt="ESG Lens logo" width="300" />
+	<img src="docs/images/logo.png" alt="ESG Lens logo" width="200" />
 </div>
 
 # ESG Reporting Generator
@@ -26,7 +26,7 @@ The database contains reports from public companies. For this project, the corpu
 ## Architecture
 
 <div align="left">
-	<img src="docs/images/architecture.png" alt="Architecture diagram" width="400" />
+	<img src="docs/images/architecture.png" alt="Architecture diagram" width="300" />
 </div>
 
 
