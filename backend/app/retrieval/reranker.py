@@ -26,7 +26,7 @@ class DocumentReranker:
             - "cross-encoder/qnli-distilroberta-base" - Q&A focused
             - "cross-encoder/ms-marco-TinyBERT-L-2-v2" - Very fast, smaller
             - "cross-encoder/ms-marco-MiniLM-L-6-v2" - Faster than default
-            - "Qwen/Qwen3-Reranker-0. 6B"
+            - "Qwen/Qwen3-Reranker-0.6B"
         """
         try:
             self.model = CrossEncoder(model_name)

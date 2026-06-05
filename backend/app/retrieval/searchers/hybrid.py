@@ -4,7 +4,13 @@ from app.retrieval.searchers.base import BaseSearcher
 from app.retrieval.searchers.vector import VectorSearcher
 from app.retrieval.searchers.bm25 import BM25Searcher
 from app.retrieval.reranker import DocumentReranker
+import os
 
+# load environment variables
+import dotenv
+dotenv.load_dotenv()
+
+FUSION_CONSTANT = os.getenv("FUSION_CONSTANT", 60)
 
 class HybridSearcher(BaseSearcher):
     """
@@ -122,57 +128,92 @@ class HybridSearcher(BaseSearcher):
     
     def _merge_results(self, vector_results: List[Dict], bm25_results: List[Dict]) -> Dict:
         """
-        Merge vector and BM25 results using Reciprocal Rank Fusion (RRF).
+        Merge vector and BM25 results using score averaging.
+        
         Returns dict of {doc_id: {doc, hybrid_score}}
         """
-        merged = {}
-        rrf_k = 60
+        # Normalize BM25 scores
+        max_bm25 = max(
+            [r.get('bm25_score', 0) for r in bm25_results],
+            default=1.0
+        )
+        bm25_scores = {
+            r['id']: r.get('bm25_score', 0) / max_bm25 if max_bm25 > 0 else 0
+            for r in bm25_results
+        }
         
-        # 1. Apply RRF for BM25 Rankings
-        for rank, doc in enumerate(bm25_results):
+        # Vector scores already normalized (0-1)
+        vector_scores = {
+            r['id']: r.get('similarity', 0)
+            for r in vector_results
+        }
+        
+        # Merge with average scoring
+        merged = {}
+        
+        # Add vector results
+        for doc in vector_results:
+            doc_id = doc['id']
+            vector_score = vector_scores[doc_id]
+            bm25_score = bm25_scores.get(doc_id, 0)
+            
+            combined = (vector_score + bm25_score) / 2 if bm25_score > 0 else vector_score
+            merged[doc_id] = {'doc': doc, 'hybrid_score': combined}
+        
+        # Add BM25-only results
+        for doc in bm25_results:
             doc_id = doc['id']
             if doc_id not in merged:
-                merged[doc_id] = {'doc': doc, 'hybrid_score': 0.0}
-            merged[doc_id]['hybrid_score'] += 1.0 / (rrf_k + rank + 1)
-            
-        # 2. Apply RRF for Vector Rankings
-        for rank, doc in enumerate(vector_results):
-            doc_id = doc['id']
-            if doc_id not in merged:
-                merged[doc_id] = {'doc': doc, 'hybrid_score': 0.0}
-            merged[doc_id]['hybrid_score'] += 1.0 / (rrf_k + rank + 1)
-            
+                merged[doc_id] = {'doc': doc, 'hybrid_score': bm25_scores[doc_id]}
+        
         return merged
     
     def _merge_results_detailed(self, vector_results: List[Dict], bm25_results: List[Dict]) -> Dict:
         """
-        Merge results with detailed score tracking using RRF.
+        Merge results with detailed score tracking.
+        
         Returns dict with bm25_score, vector_score, and hybrid_score.
         """
+        # Normalize BM25 scores
+        max_bm25 = max(
+            [r.get('bm25_score', 0) for r in bm25_results],
+            default=1.0
+        )
+        bm25_scores = {
+            r['id']: r.get('bm25_score', 0) / max_bm25 if max_bm25 > 0 else 0
+            for r in bm25_results
+        }
+        
+        vector_scores = {
+            r['id']: r.get('similarity', 0)
+            for r in vector_results
+        }
+        
         merged = {}
-        rrf_k = 60
         
-        # Initialize dictionary with base structure
-        all_docs = {doc['id']: doc for doc in vector_results + bm25_results}
-        
-        for doc_id, doc in all_docs.items():
+        # Add vector results with details
+        for doc in vector_results:
+            doc_id = doc['id']
+            vector_score = vector_scores[doc_id]
+            bm25_score = bm25_scores.get(doc_id, 0)
+            combined = (vector_score + bm25_score) / 2 if bm25_score > 0 else vector_score
+            
             merged[doc_id] = {
                 'doc': doc,
-                'bm25_score': 0.0,
-                'vector_score': 0.0,
-                'hybrid_score': 0.0
+                'bm25_score': bm25_score,
+                'vector_score': vector_score,
+                'hybrid_score': combined
             }
-
-        # Apply RRF for BM25
-        for rank, doc in enumerate(bm25_results):
-            score = 1.0 / (rrf_k + rank + 1)
-            merged[doc['id']]['bm25_score'] = score
-            merged[doc['id']]['hybrid_score'] += score
-            
-        # Apply RRF for Vector
-        for rank, doc in enumerate(vector_results):
-            score = 1.0 / (rrf_k + rank + 1)
-            merged[doc['id']]['vector_score'] = score
-            merged[doc['id']]['hybrid_score'] += score
-            
+        
+        # Add BM25-only results
+        for doc in bm25_results:
+            doc_id = doc['id']
+            if doc_id not in merged:
+                merged[doc_id] = {
+                    'doc': doc,
+                    'bm25_score': bm25_scores[doc_id],
+                    'vector_score': 0,
+                    'hybrid_score': bm25_scores[doc_id]
+                }
+        
         return merged

@@ -1,321 +1,288 @@
-# esg rag system
+<div align="center">
+	<img src="docs/images/logo.png" alt="ESG Lens logo" width="200" />
+</div>
 
-A Retrieval Augmented Generation (RAG) system for ESG Reporting.
+# ESG Reporting Generator
 
-## Quick start
+ESG Reporting Generator is a Retrieval Augmented Generation system for producing structured ESG reports for public companies. The repository contains the full stack needed to ingest company reports, search them with hybrid retrieval, and generate standardized evaluation reports through a web interface.
 
-### 1. Start the database
+## Usage
 
-Just start the database app. You might need to connect to it from another container to set up your DB schema, or you might you an ORM and a migrator (such as sqlalchemy and alembic in python or prisma for nodejs/typescript for example).
+<div align="left">
+	<img src="docs/images/ui.png" alt="User interface" width="400" />
+</div>
 
-### 2. Install dependencies
+1. Pick a company and an evaluation criterion in the frontend.
+2. Press the **Evaluate** button.
+3. Wait for report generation, which typically takes around 15 seconds.
+4. Review the markdown report in the UI and save it as a PDF when needed.
+
+For an example report, click here: [report.pdf](docs/report.pdf).
+
+Supported companies in the database:
+
+<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td>Glencore</td>
+		<td>ABB</td>
+		<td>Nestlé</td>
+		<td>UBS</td>
+	</tr>
+	<tr>
+		<td>Lonza</td>
+		<td>Swiss Re</td>
+		<td>Swisscom</td>
+		<td>Givaudan</td>
+	</tr>
+	<tr>
+		<td>Novartis</td>
+		<td>Partners Group</td>
+		<td>Lindt &amp; Sprüngli</td>
+		<td>Swatch</td>
+	</tr>
+	<tr>
+		<td>Roche</td>
+		<td>Logitech</td>
+		<td>Richemont</td>
+		<td>Zurich Insurance</td>
+	</tr>
+	<tr>
+		<td>Geberit</td>
+		<td>Holcim</td>
+		<td>Sika</td>
+		<td>Swiss Life</td>
+	</tr>
+	<tr>
+		<td>On</td>
+		<td>Amrize</td>
+		<td></td>
+		<td></td>
+	</tr>
+</table>
+
+Available evaluation criteria:
+
+<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td>Overall ESG Assessment</td>
+		<td>Environment (E) Summary</td>
+	</tr>
+	<tr>
+		<td>Social (S) Summary</td>
+		<td>Governance (G) Summary</td>
+	</tr>
+	<tr>
+		<td>Climate Risk Management</td>
+		<td>GHG Emissions &amp; Metrics</td>
+	</tr>
+	<tr>
+		<td>Energy Transition &amp; Renewables</td>
+		<td>Water &amp; Biodiversity Stewardship</td>
+	</tr>
+	<tr>
+		<td>Supply Chain Sustainability</td>
+		<td>Labor Practices &amp; Worker Rights</td>
+	</tr>
+	<tr>
+		<td>Diversity, Equity &amp; Inclusion</td>
+		<td>Data Privacy &amp; Cybersecurity</td>
+	</tr>
+	<tr>
+		<td>Anti-Corruption &amp; Business Ethics</td>
+		<td>Disclosure, Targets &amp; Reporting Quality</td>
+	</tr>
+</table>
+
+## Database
+
+The database contains reports from public companies. For this project, the corpus includes SMI companies and other reputable companies such as UBS, Roche, and Swatch. The documents cover annual reports, sustainability reports, compensation reports, and corporate governance reports from 2020 to 2025. Overall, we processed a total of 265 documents.
+
+## Architecture
+
+<div align="left">
+	<img src="docs/images/architecture.png" alt="Architecture diagram" width="300" />
+</div>
+
+
+The system is organized into two pipelines.
+
+### Ingestion pipeline
+
+Raw PDFs are parsed into structured fields: company, document title, year, and raw text string. The text is then split using semantic chunking, where sentence embeddings are compared and boundaries are introduced when the semantic difference becomes large enough. The resulting chunks are embedded with BAAI/bge-base-en-v1.5 and stored together with their metadata in PostgreSQL.
+
+To seed the database, run:
 
 ```bash
-cd backend                 # navigate to backend root
+python3 backend/scripts/seed_db.py
+```
 
+For proper parsing, place PDFs in `data/raw_pdfs` and name them using the following pattern:
+
+```text
+COMPANY NAME_DOCUMENT TITLE_YEAR.pdf
+```
+
+You can also use the LLM-based `renamer.py` script in `backend/scripts/` to standardize filenames before seeding.
+
+### Generation pipeline
+
+The frontend sends the selected company and evaluation criterion to the FastAPI backend. Based on the criterion, the backend selects a predefined query and sends it to retrieval. Retrieval uses both BM25 and vector search, then fuses the rankings with a linear combination and applies a reranker (`ms-marco-MiniLM-L-12-v2`). Querying is filtered by company so the system only returns chunks related to the selected organization. The top-k retrieved chunks, with a default of 10, are passed into a prompt that instructs the LLM generator to produce a standardized report. The generator uses Qwen 2.5-1.5B on GPU/CUDA when available, with CPU as a slower fallback. The final report is returned in markdown format to the frontend via the API response.
+
+## Quick Start
+
+### Prerequisites
+
+- Python
+- virtualenv
+- PostgreSQL with the `pgvector` extension
+- Optional GPU for faster embeddings and LLM generation
+
+### Clone and environment
+
+```bash
+git clone https://github.com/lazi-nhr/esg-reporting-rag-system
+cd /path/to/esg-reporting-rag-system
+cp .env.example .env
+```
+
+Edit the copied `.env` as described in the **Configuration** section below.
+
+### Install
+
+```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-### 2a. Full Stack Running
+### Full stack run
 
 ```bash
-cd /path/to/esg-reporting-rag-system  # navigate to project root
-
-python setup.py                       # checks DB, loads sample data, starts both servers
-
-python cleanup.py                     # stops servers, clears documents, removes logs
+cd /path/to/esg-reporting-rag-system
+python setup.py
 ```
 
-(Bash equivalents: `./setup.sh` / `./cleanup.sh`)
-
-### 2b. Backend Running
-
-In the backend app:
+This checks the database, loads sample data, warms up the model, and starts both servers. To stop everything and clean logs/data, run:
 
 ```bash
-cd backend                  # navigate to backend root
-
-python main.py              # starts on port 8500
-# or
-python start_backend.py     # checks DB, starts FastAPI on port 8500
-
-python stop_backend.py      # stops server
+python cleanup.py
 ```
 
+### Backend only
 
-### 2c. Frontend Running
+```bash
+cd backend
+python main.py
+```
 
-In the frontend app:
+Or use the helper scripts:
+
+```bash
+python start_backend.py
+python stop_backend.py
+```
+
+### Frontend only
 
 ```bash
 cd frontend
-
-python start_frontend.py    # starts reverse-proxy server on port 3000
-
-python stop_frontend.py     # stops server
+python start_frontend.py
+python stop_frontend.py
 ```
 
-### 3. Open Frontend
+### Open the frontend
 
-Open the VS Code Server URL for port 3000 in your browser.
+Open the VS Code Server URL for port 3000 in your browser:
 
-1. In the bottom panel of your VS Code interface (where you see the Terminal), look for a tab labeled Ports.
+1. Open the **Ports** tab in the bottom panel.
+2. Find port `3000`.
+3. Click the forwarded address link.
 
-2. Look for the row where the Port is 3000.
-
-3. Click the link in the "Forwarded Address" column.
-
-
-### 4. View logs
+### Logs
 
 ```bash
 tail -f /tmp/backend.log
 tail -f /tmp/frontend.log
 ```
 
-## How networking works on Nuvolos
 
-Nuvolos runs your applications as **pods** inside Kubernetes. You don't manage
-Kubernetes directly — Nuvolos handles that. Here's what matters:
-
-- Each pod can contain one or more **containers** (processes).
-- Nuvolos places every pod on a **managed internal subnet** — a private network
-  that only your pods can see.
-- Each pod's main container gets a **hostname** (e.g. `nv-service-abc123...`).
-  Other pods reach it by that hostname, the same way computers on a LAN find
-  each other by name. In order for a pod to even get a hostname, you have to turn this feature on. See the [docs](https://docs.nuvolos.com/features/applications/configuring-applications#connecting-to-apps-from-other-applications)
-- **Nothing on this internal network is directly reachable from the internet.**
-  The only way an outside browser can talk to your app is through Nuvolos'
-  built-in **reverse proxy** (the VS Code Server URL it gives you).
-
-### What is a reverse proxy?
-
-A **reverse proxy** sits between external users and your internal services.
-The user's browser talks to the proxy; the proxy forwards the request to
-the right internal service and returns the response.
-
-```
- Internet                          Nuvolos internal network
-──────────                         ────────────────────────
-
-Browser                            ┌──────────────────────┐
-   │                               │  Frontend  (port 3000)│
-   │  HTTPS request                │  - serves index.html  │
-   ├──────────────────────────────►│  - reverse-proxies    │
-   │  (goes through Nuvolos'       │    /documents, /query │
-   │   VS Code Server proxy)       │    to the Backend     │
-   │                               └──────────┬───────────┘
-   │                                          │ http://<BACKEND_HOSTNAME>:8500
-   │                               ┌──────────▼───────────┐
-   │                               │  Backend   (port 8500)│
-   │                               │  - FastAPI app        │
-   │                               │  - talks to Postgres  │
-   │                               └──────────┬───────────┘
-   │                                          │ postgresql://<DB_HOSTNAME>:5432
-   │                               ┌──────────▼───────────┐
-   │                               │  PostgreSQL + pgvector│
-   │                               │  (vector similarity)  │
-   │                               └──────────────────────┘
-```
-
-**Why does the frontend reverse-proxy API calls instead of letting the browser
-call the backend directly?**
-
-Because the backend hostname (e.g. `nv-service-abc123...`) only exists on the
-internal Nuvolos network. Your browser, sitting on the public internet, cannot
-resolve or reach it. So the frontend server accepts the API request from the
-browser and forwards it to the backend over the internal network. This is
-exactly what tools like Nginx and API gateways do in production.
-
-## How the pieces fit together
-
-| Component | Port | Hostname | Role |
-|-----------|------|----------|------|
-| Frontend  | 3000 | this pod | Serves HTML; **reverse-proxies** `/health`, `/documents`, `/query` to the backend |
-| Backend   | 8500 | set by Nuvolos (`BACKEND_HOST` env var) | FastAPI app — stores docs, runs vector search |
-| PostgreSQL| 5432 | set by Nuvolos (`DB_HOST` env var) | Database with `pgvector` extension |
-
-The frontend decides what to proxy based on the URL path:
-
-| Browser requests…       | Frontend does…                     |
-|------------------------|------------------------------------|
-| `/` or `/index.html`  | Serves the static HTML page        |
-| `/health`              | Forwards to `backend:8500/health`  |
-| `/documents`           | Forwards to `backend:8500/documents` |
-| `/query`               | Forwards to `backend:8500/query`   |
-| `/evaluate`            | Forwards to `backend:8500/evaluate` |
-
-## API endpoints
-
-| Method | Path         | Description              |
-|--------|-------------|--------------------------|
-| GET    | `/`         | Root / status            |
-| GET    | `/health`   | Health check (DB ping)   |
-| POST   | `/documents`| Add a document           |
-| GET    | `/documents`| List all documents       |
-| POST   | `/query`    | Vector-similarity search |
-| EVALUATE | `/evaluate` | Run RAG evaluation     |
-
-Test from the terminal (inside the backend pod, or any pod on the same subnet):
+### 5. View GPU usage (cuda only)
 
 ```bash
-curl http://localhost:8500/health
-
-curl -X POST http://localhost:8500/documents \
-  -H "Content-Type: application/json" \
-  -d '{"content":"Python is a high-level programming language."}'
-
-curl -X POST http://localhost:8500/query \
-  -H "Content-Type: application/json" \
-  -d '{"query":"What is Python?","top_k":3}'
+watch -n 1 nvidia-smi
 ```
 
-## Project structure
+## Configuration
 
-```
-.
-├── backend/
-│   ├── app/
-│   │   ├── api/              # API routes (health, documents, query, evaluate)
-│   │   ├── core/             # Configuration and error handling
-│   │   ├── db/               # Database connection, schemas, repositories
-│   │   ├── llm/              # LLM integration for answer generation
-│   │   ├── retrieval/        # Vector search and similarity retrieval
-│   │   ├── services/         # Business logic (evaluate_service)
-│   │   ├── formatting/       # Report formatting and rendering
-│   │   └── main.py           # FastAPI app setup
-│   ├── scripts/
-│   │   ├── query_esg_evaluation.py   # API-based query script
-│   │   ├── query_database.py         # Direct database query script
-│   │   ├── batch_evaluate.py         # Batch evaluation script
-│   │   ├── seed_db.py                # Load PDFs into database
-│   │   ├── cli.py                    # CLI utilities
-│   │   ├── evaluations_example.json  # Example evaluation configs
-│   │   ├── quickstart.sh             # Interactive quick-start menu
-│   │   └── README.md                 # Query scripts documentation
-│   ├── main.py               # Entry point (imports from app.main)
-│   ├── requirements.txt       # Python dependencies
-│   ├── start_backend.py       # Start script (checks DB, launches server on :8500)
-│   └── stop_backend.py        # Stop script
-├── frontend/
-│   ├── index.html            # Single-page UI
-│   ├── server.py             # HTTP server + reverse proxy to backend
-│   ├── start_frontend.py      # Start script (launches server on :3000)
-│   └── stop_frontend.py       # Stop script
-├── data/
-│   ├── raw_pdfs/             # PDF documents for seeding the database
-│   └── sample_data.csv        # Sample ESG documents (loaded on first run)
-├── setup.py / setup.sh        # One-command full-stack setup
-├── cleanup.py / cleanup.sh    # One-command full-stack teardown
-├── STORY.md                   # Narrative walkthrough
-└── README.md                  # This file
-```
+The main configuration lives in [backend/app/core/config.py](backend/app/core/config.py). Important environment variables include `BACKEND_PORT`, `HF_API_KEY`, `DB_*`, `EMBEDDING_MODEL`, `MIN_CHUNK_TOKENS`, `MAX_CHUNK_TOKENS`, and `BACKEND_STARTUP_TIMEOUT`.
 
-## Query Scripts
+## Deployment and Hardware Considerations
 
-The `backend/scripts/` directory contains command-line tools for querying the ESG database:
+This project was deployed on Nuvolos using three isolated pods on a private subnet: a web frontend pod, a FastAPI backend pod, and a PostgreSQL pod. The frontend reverse-proxies API requests to the backend because the backend and database hostnames are only reachable on the internal Nuvolos network.
 
-- **query_esg_evaluation.py** - HTTP API client for the FastAPI backend
-- **query_database.py** - Direct database queries with vector/full-text search
-- **batch_evaluate.py** - Batch process multiple companies and criteria
-- **quickstart.sh** - Interactive menu to run example queries
+The system performs best on GPU, especially for embeddings and LLM generation. CPU execution is possible, but report generation is slower.
 
-See [backend/scripts/README.md](backend/scripts/README.md) for detailed usage and examples.
+## Network Layout on Nuvolos
 
-## Technical notes
+Nuvolos runs applications as pods inside Kubernetes. The frontend pod serves the UI and reverse-proxies requests to the backend pod, while the backend pod talks to PostgreSQL on the internal subnet. External browsers can reach the app only through the Nuvolos reverse proxy, which is why the frontend sits between the browser and the backend.
 
-### Embeddings
+## APIs and Endpoints
 
-The system uses **Sentence Transformers** (all-MiniLM-L6-v2, 384 dimensions) for document and query embeddings. Switch models in `app/core/config.py`:
+| Method | Path | Description |
+|---|---|---|
+| POST | `/evaluate` | Evaluate a company and an evaluation criterion |
+| GET | `/companies` | Get the list of distinct companies available in the database |
+| GET | `/criteria` | Get the list of available criteria defined in [backend/app/core/config.py](backend/app/core/config.py) |
 
-```python
-# In requirements.txt: sentence-transformers==3.0.1
-# In config: EMBEDDING_MODEL = "all-MiniLM-L6-v2" or any HuggingFace model
-```
+## Evaluation Criteria
 
-For production, consider:
-- Larger models (all-mpnet-base-v2, 768 dim) for better quality
-- OpenAI embeddings API for superior performance
-- Cached embeddings for faster inference
+Evaluation criteria are defined as a list in [backend/app/core/config.py](backend/app/core/config.py). Each criterion entry contains:
 
-### LLM Integration
+- `id`: stable identifier used by the frontend and backend
+- `name`: human-readable label shown in the UI
+- `description`: short explanation of the criterion
+- `category`: broad group such as environment, social, or governance
+- `question`: the prompt sent to the generator
+- `context_instructions`: extra guidance for report generation
+- `output_format`: expected report shape
+- `required_fields`: fields that should be covered in the answer
+- `retrieval_bias`: keywords used to bias retrieval toward relevant chunks
 
-The system supports multiple LLM providers via `app/llm/generator.py`:
+To add a new criterion, append a new dictionary to `EVALUATION_CRITERIA`. To remove one, delete its dictionary from the list. Keep the `id` stable if the frontend or existing reports depend on it.
 
-- **HuggingFace Inference API** (default, configurable via `HF_API_KEY`)
-- **OpenAI** (swap `generate_answer()` implementation)
-- **Open-source models** (Mistral, Llama via HuggingFace)
+## Chunking
 
-Configure in `.env`:
-```bash
-LLM_PROVIDER=huggingface
-HF_MODEL=gpt2
-HF_API_KEY=your_api_key_here
-```
+Semantic chunking splits text by comparing sentence embeddings. Each sentence is embedded, neighboring sentences are compared, and a chunk boundary is created when the semantic difference becomes large enough. This helps preserve meaning better than fixed-size splitting for long ESG reports.
 
-### Vector Database
+## Further Work
 
-Uses **PostgreSQL + pgvector** for:
-- Vector similarity search (cosine distance)
-- Hybrid search (vector + full-text keywords)
-- Indexed HNSW for sub-second search on millions of documents
+- Add more reports and expand the database
+- Add additional refining filters such as year filtering
+- Add chat functionality to the UI
+- Add plotting capabilities to the reports
+- Add a company comparison feature
 
-### Evaluation Reports
+## Disclaimer
 
-The `/evaluate` endpoint generates structured ESG reports with:
-- Retrieved document context
-- LLM-generated assessment
-- Markdown or plain-text formatting
-- Configurable output per company/criterion
+This repository is provided **for research and educational purposes only**.  
+It does not constitute financial advice, and no component is intended for production trading without further validation and risk assessment.
 
-## Database Management
+## License & Contributors
 
-### Initialize Database
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-The database is automatically initialized on first run:
+<details>
+<summary><b>View Full Contributor List & Usage Agreement</b></summary>
 
-```bash
-python setup.py  # Initializes DB, creates tables, loads sample data
-```
+### Development Team (University of Zurich, IFI)
+* **Dan Friedman** ([Smasken](https://github.com/Smasken)) — *Backend Engineer*
+* **Peng Liu** ([Pengliu98](https://github.com/Pengliu98)) — *RAG Engineer*
+* **Liun Grichting** ([liun777](https://github.com/liun777)) — *Frontend Engineer*
+* **Lazaro Hofmann** ([lazi-nhr](https://github.com/lazi-nhr)) — *System Architect*
 
-Or manually:
+### Commercial Usage Agreement
+The contributors listed above have collectively agreed to release this repository under the MIT License. By participating in this project, all contributors acknowledge:
+1. This code is open-source and available for public use, modification, and distribution.
+2. Each individual contributor retains the right to use the logic and code herein for future independent research or commercial ventures.
+3. No contributor is entitled to profits, equity, or royalties derived from another contributor's future independent work or business entities built upon this open-source baseline.
 
-```bash
-cd backend
-python start_backend.py  # Creates tables on startup if they don't exist
-```
-
-### Seed with Documents
-
-Load PDF documents into the database:
-
-```bash
-cd backend/scripts
-python seed_db.py  # Loads all PDFs from data/raw_pdfs/
-```
-
-### Clear Documents
-
-Delete all documents but keep tables:
-
-```bash
-python -c "
-import psycopg2
-conn = psycopg2.connect(host='localhost', port=5432, database='nuvolos', user='nuvolos', password='nuvolos')
-cur = conn.cursor()
-cur.execute('DELETE FROM documents;')
-conn.commit()
-cur.close()
-conn.close()
-print('✅ All documents deleted')
-"
-```
-
-### Reset Database
-
-Drop and recreate all tables:
-
-```bash
-python cleanup.py  # Stops servers, clears all data, removes logs
-python setup.py    # Reinitializes and starts fresh
-```
+</details>

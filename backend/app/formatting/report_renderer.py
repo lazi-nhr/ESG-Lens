@@ -4,6 +4,19 @@ Report formatting: turn retrieval + generation results into markdown or text.
 from typing import List, Dict
 
 
+def _format_document_label(document: Dict) -> str:
+    title = str(document.get("report_title") or "").strip()
+    year = document.get("year")
+
+    if title and year:
+        return f"{title} ({year})"
+    if title:
+        return title
+    if year:
+        return f"Report ({year})"
+    return f"Doc {document.get('id', '?')}"
+
+
 def format_report_markdown(
     company: str,
     criterion: str,
@@ -17,7 +30,7 @@ def format_report_markdown(
     if retrieved_docs:
         retrieved_md = "\n".join(
             [
-                f"{i+1}. (Doc {r['id']}, similarity {(float(r['similarity'])*100):.1f}%) "
+                f"{i+1}. ({_format_document_label(r)}, similarity {(float(r['similarity'])*100):.1f}%) "
                 f"{str(r['content'])[:300]}{'...' if len(str(r['content'])) > 300 else ''}"
                 for i, r in enumerate(retrieved_docs)
             ]
@@ -57,7 +70,7 @@ def format_report_text(
     if retrieved_docs:
         retrieved_text = "\n".join(
             [
-                f"{i+1}. (Doc {r['id']}, similarity {(float(r['similarity'])*100):.1f}%) "
+                f"{i+1}. ({_format_document_label(r)}, similarity {(float(r['similarity'])*100):.1f}%) "
                 f"{str(r['content'])[:300]}{'...' if len(str(r['content'])) > 300 else ''}"
                 for i, r in enumerate(retrieved_docs)
             ]

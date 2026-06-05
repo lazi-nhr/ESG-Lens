@@ -1,18 +1,26 @@
 """
 Embedding function: convert text to vector representation using sentence-transformers.
 """
-import os
-from app.core.config import EMBEDDING_DIM
+from app.core.config import EMBEDDING_DIM, EMBEDDING_MODEL, HF_API_KEY
 
 _model = None
-# Dynamically grab the model from environment variables, defaulting to BGE
-MODEL_NAME = os.environ.get("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
+# Dynamically grab the model from environment variables
+MODEL_NAME = EMBEDDING_MODEL
 
 def _get_model():
     """Load sentence-transformers model (lazy loading)."""
     global _model
     if _model is None:
         from sentence_transformers import SentenceTransformer
+        
+        # Authenticate with Hugging Face Hub if API key is available
+        if HF_API_KEY and HF_API_KEY.startswith("hf_"):
+            try:
+                from huggingface_hub import login
+                login(token=HF_API_KEY, add_to_git_credential=False)
+            except Exception as e:
+                print(f"Warning: Could not authenticate with HF_API_KEY: {e}")
+        
         _model = SentenceTransformer(MODEL_NAME)
     return _model
 
@@ -31,7 +39,7 @@ def create_embedding(text: str, is_query: bool = False) -> str:
         encode_text = text
 
     model = _get_model()
-    embedding = model.encode(encode_text, convert_to_tensor=False)
+    embedding = model.encode(encode_text, convert_to_tensor=False, show_progress_bar=False)
     embedding_list = embedding.tolist()
     
     return "[" + ",".join(map(str, embedding_list)) + "]"

@@ -90,7 +90,7 @@ def check_if_running():
             # Check if process is actually running
             os.kill(pid, 0)
             print_error(f"Backend server is already running (PID: {pid})")
-            print(f"To stop it, run: python3 stop_backend.py")
+            print("To stop it, run: python3 stop_backend.py")
             return True
         except (OSError, ValueError):
             # Process not running, clean up stale PID file

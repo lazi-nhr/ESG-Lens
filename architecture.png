@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder architecture diagram saved as .png (SVG content) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
+  <style>
+    .box { fill:#f7f9fc; stroke:#2b6cb0; stroke-width:2; rx:8; }
+    .small { font:14px sans-serif; fill:#1a202c }
+    .title { font:18px sans-serif; font-weight:700; fill:#0b3d91 }
+    .arrow { stroke:#4a5568; stroke-width:2; marker-end:url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4a5568" />
+    </marker>
+  </defs>
+  <!-- Title -->
+  <text x="40" y="30" class="title">ESG Reporting Generator — Architecture</text>
+
+  <!-- Frontend -->
+  <rect x="40" y="60" width="240" height="80" class="box" />
+  <text x="70" y="100" class="small">Frontend (UI)</text>
+  <text x="70" y="120" class="small">- Select company & criterion</text>
+
+  <!-- Backend -->
+  <rect x="420" y="60" width="320" height="120" class="box" />
+  <text x="450" y="100" class="small">Backend (FastAPI)</text>
+  <text x="450" y="120" class="small">- Retrieval (BM25 + vector)</text>
+  <text x="450" y="140" class="small">- LLM generator</text>
+
+  <!-- Database -->
+  <rect x="800" y="60" width="300" height="120" class="box" />
+  <text x="830" y="100" class="small">PostgreSQL + pgvector</text>
+  <text x="830" y="120" class="small">- Chunks, embeddings, metadata</text>
+
+  <!-- Arrows frontend->backend->db -->
+  <line x1="280" y1="100" x2="420" y2="100" class="arrow" />
+  <line x1="740" y1="100" x2="800" y2="100" class="arrow" />
+
+  <!-- Ingestion pipeline -->
+  <rect x="40" y="220" width="240" height="120" class="box" />
+  <text x="70" y="260" class="small">Raw PDFs</text>
+  <text x="70" y="280" class="small">(data/raw_pdfs)</text>
+
+  <rect x="320" y="220" width="340" height="120" class="box" />
+  <text x="350" y="260" class="small">Ingestion</text>
+  <text x="350" y="280" class="small">- Parse filename → company/title/year</text>
+  <text x="350" y="300" class="small">- Semantic chunking</text>
+
+  <rect x="700" y="220" width="300" height="120" class="box" />
+  <text x="730" y="260" class="small">Embedding</text>
+  <text x="730" y="280" class="small">- BAAI/bge-base-en-v1.5</text>
+
+  <line x1="280" y1="280" x2="320" y2="280" class="arrow" />
+  <line x1="660" y1="280" x2="700" y2="280" class="arrow" />
+  <line x1="1000" y1="280" x2="1000" y2="140" class="arrow" />
+  <line x1="1000" y1="140" x2="900" y2="140" class="arrow" />
+
+  <!-- Notes -->
+  <text x="40" y="380" class="small">Pipelines:</text>
+  <text x="160" y="380" class="small">1) Ingestion: PDFs → chunks → vectors → DB</text>
+  <text x="160" y="400" class="small">2) Generation: UI → retrieval → LLM → report</text>
+
+  <text x="40" y="430" class="small">Retrieval:</text>
+  <text x="160" y="430" class="small">BM25 + vector fusion + reranker (ms-marco-MiniLM)</text>
+
+  <text x="40" y="460" class="small">Recommendation:</text>
+  <text x="160" y="460" class="small">Run embeddings & LLM on GPU for best performance</text>
+
+</svg>

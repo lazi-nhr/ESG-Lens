@@ -12,6 +12,10 @@ import time
 import subprocess
 from pathlib import Path
 
+# Load environment variables from .env file (if it exists)
+from dotenv import load_dotenv
+load_dotenv()
+
 # Colors for output
 GREEN = '\033[0;32m'
 YELLOW = '\033[1;33m'
@@ -20,7 +24,9 @@ NC = '\033[0m'  # No Color
 
 # Frontend configuration
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "3000")
-BACKEND_HOST = os.getenv("BACKEND_HOST", "nv-service-88b8cea7986f962e7adf9de55882f1d8:8500")
+# BACKEND_URL should be the address the frontend uses to connect to backend
+# (not BACKEND_HOST which is for server binding)
+BACKEND_URL = os.getenv("BACKEND_URL", "localhost:8500")
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -57,7 +63,7 @@ def check_if_running():
             # Check if process is actually running
             os.kill(pid, 0)
             print_error(f"Frontend server is already running (PID: {pid})")
-            print(f"To stop it, run: python3 stop_frontend.py")
+            print("To stop it, run: python3 stop_frontend.py")
             return True
         except (OSError, ValueError):
             # Process not running, clean up stale PID file
@@ -79,7 +85,7 @@ def start_frontend():
         stdout=frontend_log,
         stderr=subprocess.STDOUT,
         env={**os.environ, **{
-            "BACKEND_HOST": BACKEND_HOST
+            "BACKEND_URL": BACKEND_URL
         }}
     )
     
@@ -117,7 +123,7 @@ def main():
     # Success message
     print_colored(GREEN, "\n=== Frontend Started! ===\n")
     print(f"Frontend UI: http://localhost:{FRONTEND_PORT}")
-    print(f"Backend API: https://{BACKEND_HOST}")
+    print(f"Backend API: http://{BACKEND_URL}")
     print()
     print("To stop the server, run: python3 stop_frontend.py")
 

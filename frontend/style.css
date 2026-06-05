@@ -4,27 +4,36 @@
     box-sizing: border-box;
 }
 
+/* 1. Light Mode Variables */
 :root {
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --card-bg: white;
-    --text-main: #333;
+    /* Primary: Deep Slate Blue | Accent: Sage Green | Surface: Off-White | Text: Charcoal */
+    --primary: #1E3A5F;
+    --accent: #5D8C7B;
+    --surface: #F8F9FA;
+    --text-main: #2D3436;
     --text-muted: #555;
-    --border-color: black;
-    --input-bg: #f1f5f9;
-    --report-bg: #f1f5f9;
+    --bg-gradient: linear-gradient(135deg, #1E3A5F 0%, #3d5a7f 100%);
+    --card-bg: white;
+    --border-color: #E0E0E0;
+    --input-bg: #F8F9FA;
+    --report-bg: #F8F9FA;
     --code-bg: white;
 }
 
+/* 2. Dark Mode Variables */
 body.dark-mode {
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --card-bg: black;
-    --text-main: white;
-    --text-muted: #cbd5e0;
-    --border-color: white;
-    --input-bg: #131720;
-    --report-bg: #131720;
-    --code-bg: #2d3748;
-    color-scheme: dark;
+    color-scheme: dark; /* Native dark mode for scrollbars and dropdowns! */
+    --primary: #2D5A8C;
+    --accent: #7BA896;
+    --surface: #1A1F26;
+    --text-main: #F0F1F3;
+    --text-muted: #A0A5B0;
+    --bg-gradient: linear-gradient(135deg, #1A2F4C 0%, #2D5A8C 100%);
+    --card-bg: #242A33;
+    --border-color: #3A3F47;
+    --input-bg: #1A1F26;
+    --report-bg: #1A1F26;
+    --code-bg: #2D3748;
 }
 
 body {
@@ -33,6 +42,7 @@ body {
     color: var(--text-main);
     min-height: 100vh;
     padding: 20px;
+    position: relative; /* Helps position the toggle button */
 }
 
 .container {
@@ -44,18 +54,81 @@ body {
     text-align: center;
     color: white;
     margin-bottom: 40px;
+    position: relative;
 }
 
-.header h1 {
-    font-size: 2.5em;
-    margin-bottom: 10px;
+/* Logo styling - easy to change */
+.header .logo {
+    max-width: 400px;
+    height: auto;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.header p {
-    font-size: 1.2em;
-    opacity: 0.9;
+/* SVG logo element colors - Leaf: Sage Green | Text: Deep Slate Blue */
+#leaf-outer,
+#leaf-stem,
+#leaf-vein-1,
+#leaf-vein-2 {
+    stroke: #5D8C7B !important; /* Sage Green for leaf */
 }
 
+#logo-text {
+    fill: #1E3A5F !important; /* Deep Slate Blue for text */
+}
+
+/* Dark mode: lighten text for visibility */
+body.dark-mode #logo-text {
+    fill: #F0F1F3 !important;
+}
+
+/* Dark mode: leaf stays same color (good contrast) */
+body.dark-mode #leaf-outer,
+body.dark-mode #leaf-stem,
+body.dark-mode #leaf-vein-1,
+body.dark-mode #leaf-vein-2 {
+    stroke: #5D8C7B !important;
+}
+
+/* --- Theme Toggle Switch --- */
+button.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: auto;
+    
+    /* Matches the Evaluate button shape and animation */
+    padding: 12px 30px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--accent);
+    transition: transform 0.2s, background-color 0.3s, color 0.3s;
+    
+    /* Light Mode Colors */
+    background: var(--primary);
+    color: white;
+}
+
+button.theme-toggle:hover {
+    transform: translateY(-2px);
+    background: var(--accent);
+}
+
+/* Dark Mode Colors */
+body.dark-mode button.theme-toggle {
+    background: var(--primary);
+    color: white;
+}
+
+body.dark-mode button.theme-toggle:hover {
+    background: var(--accent);
+}
+
+/* --- Main Layout --- */
 .main-content {
     display: grid;
     grid-template-columns: 1fr;
@@ -66,28 +139,20 @@ body {
 .card {
     background: var(--card-bg);
     border-radius: 10px;
-    padding: 25px;
+    padding: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .card h2 {
     color: var(--text-main);
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     font-size: 1.5em;
 }
 
-.form-group {
-    margin-bottom: 15px;
-}
-
-option {
-    background-color: var(--input-bg); 
-    color: var(--text-main);
-}
-
+/* --- Form Elements --- */
 .eval-row {
     display: flex;
-    gap: 15px;
+    gap: 8px;
     align-items: flex-end;
     flex-wrap: wrap;
 }
@@ -102,24 +167,6 @@ option {
     flex: 0 0 auto;
 }
 
-.eval-row button {
-    width: auto;
-    padding-left: 24px;
-    padding-right: 24px;
-    white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-    .eval-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .eval-row button {
-        width: 100%;
-    }
-}
-
 .form-group label {
     display: block;
     margin-bottom: 5px;
@@ -127,6 +174,7 @@ option {
     font-weight: 500;
 }
 
+/* Matched borders to 2px */
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -137,7 +185,7 @@ option {
     font-size: 14px;
     transition: border-color 0.3s;
     background: var(--input-bg);
-    color: var(--text-main)
+    color: var(--text-main);
 }
 
 .form-group input:focus,
@@ -147,104 +195,79 @@ option {
     border-color: var(--border-color);
 }
 
-.form-group textarea {
-    resize: vertical;
-    min-height: 100px;
+/* Lock in the colors for dropdown list items */
+option {
+    background-color: var(--input-bg);
+    color: var(--text-main);
 }
 
-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* --- Evaluate Button --- */
+button.primary-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
     color: white;
     border: none;
     padding: 12px 30px;
     border-radius: 5px;
     font-size: 16px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.3s;
     width: 100%;
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
 }
 
-button:hover {
+button.primary-btn:hover {
     transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(30, 58, 95, 0.4);
 }
 
-button:active {
-    transform: translateY(0);
+@media (max-width: 768px) {
+    .eval-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .eval-row button {
+        width: 100%;
+    }
 }
 
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.status {
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    font-weight: 500;
-}
-
-.status.success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.status.error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.status.info {
-    background: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-}
-
-.documents-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.document-item {
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    background: #f9f9f9;
-}
-
-.document-item strong {
-    color: #667eea;
-}
-
-.response-area {
-    background: var(--report-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    padding: 15px;
-    min-height: 200px;
-    white-space: pre-wrap;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    color: var(--text-main);
-}
-
+/* --- Report Output Box --- */
 .report-output {
-    width: 100%;
-    min-height: 420px;
-    padding: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
     background: var(--report-bg);
-    color: var(--text-main);
-    font-size: 14px;
-    overflow: auto;
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    border-radius: 5px;
+    font-size: 15px;
+    line-height: 1.6;
+    
+    /* 1. Lock the height and make it scrollable */
+    max-height: 300px; /* Adjust this number to make the box taller or shorter! */
+    overflow-y: auto;  /* Adds a vertical scrollbar when content exceeds 500px */
+    
+    /* Optional: Keep words wrapping nicely */
+    white-space: normal;
+    word-wrap: break-word;
 }
 
-/* Minimal markdown styling inside the report area */
+/* --- Optional Pro-Tip: Custom Scrollbar Styling --- */
+/* This makes the scrollbar look sleek and modern instead of the clunky browser default */
+.report-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.report-output::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.report-output::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+body.dark-mode .report-output::-webkit-scrollbar-thumb {
+    background: #555;
+}
+
 .report-output h1,
 .report-output h2,
 .report-output h3,
@@ -253,17 +276,6 @@ button:disabled {
 .report-output ol {
     color: var(--text-main);
     margin: 12px 0 8px;
-}
-
-.report-output p {
-    margin: 8px 0;
-    color: #333;
-}
-
-.report-output ul,
-.report-output ol {
-    margin: 8px 0 8px 20px;
-    color: #333;
 }
 
 .report-output code {
@@ -289,47 +301,201 @@ button:disabled {
     color: var(--text-main);
 }
 
-.full-width {
-    grid-column: 1 / -1;
+/* --- Report Header & Download Button --- */
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.loading {
-    text-align: center;
-    padding: 20px;
-    color: #667eea;
+/* Remove the bottom margin from the h2 so it centers perfectly with the button */
+.report-header h2 {
+    margin-bottom: 0;
 }
 
-.spinner {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #667eea;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
+button.download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;              
+    
+    /* Back to automatic sizing based on content! */
+    width: auto;           
+    height: auto;
+    padding: 12px 24px;    
+    
+    font-size: 16px;
+    font-weight: 600;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+button.download-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
-button.theme-toggle {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: auto;
-    background: white;
-    color: black;
-    border: 2px solid black;
-    border-radius: 30px;
-    padding: 8px 16px;
-    font-size: 14px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
+/* ============================================================================
+   RESPONSIVE DESIGN - MOBILE & TABLET (Merged)
+   ============================================================================ */
 
-body.dark-mode button.theme-toggle {
-    background: black;
-    color: white;
-    border-color: white;
+/* --- ALL SCREENS UNDER 900px (Tablets & Phones) --- */
+@media (max-width: 900px) {
+    * {
+        /* Improve touch target sizes on mobile */
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+        /* Prevent font scaling on orientation change */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    body {
+        padding: 10px 30px;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    .header {
+        margin-bottom: 20px;
+    }
+
+    .header .logo {
+        max-width: 200px;
+        margin-bottom: 15px;
+    }
+
+    button.theme-toggle {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+        padding: 8px 16px;
+        font-size: 13px;
+        width: auto;
+    }
+
+    .card {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .card h2 {
+        font-size: 1.2em;
+        margin-bottom: 8px;
+    }
+
+    /* Stack all form elements vertically, killing the extra white space */
+    .eval-row {
+        flex-direction: column;
+        gap: 6px;
+        align-items: stretch;
+    }
+
+    .eval-row .form-group {
+        flex: 1 1 auto;
+        margin-bottom: 0;
+    }
+
+    .eval-row .action-group {
+        flex: 1 1 auto;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        /* Reduced vertical padding (8px) while keeping it wide enough (12px) on the sides */
+        padding: 6px 12px; 
+        font-size: 12px; /* Shrunk the text */
+        border-radius: 4px;
+        height: auto; /* Ensures the box collapses cleanly around the new smaller padding */
+    }
+
+    button.primary-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 14px;
+        border-radius: 4px;
+        min-height: 48px;
+    }
+
+    /* Report output box */
+    .report-output {
+        max-height: 250px;
+        padding: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        border-radius: 4px;
+    }
+
+    .report-output h1 { font-size: 1.2em; margin: 10px 0 6px; }
+    .report-output h2 { font-size: 1.1em; margin: 10px 0 6px; }
+    .report-output h3 { font-size: 1em; margin: 8px 0 4px; }
+    .report-output p { margin: 8px 0 6px; }
+    .report-output ul, .report-output ol { margin: 8px 0 6px 16px; }
+    .report-output li { margin-bottom: 4px; }
+
+    .report-output code {
+        font-size: 12px;
+        padding: 2px 4px;
+        background: var(--input-bg);
+        border-radius: 3px;
+    }
+
+    .report-output pre {
+        padding: 10px;
+        margin: 8px 0;
+        font-size: 11px;
+        border-radius: 3px;
+        overflow-x: auto;
+    }
+
+    .report-output blockquote {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    /* Report header */
+    .report-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+        margin-bottom: 10px;
+    }
+
+    .report-header h2 {
+        font-size: 1.1em;
+        margin-bottom: 0;
+    }
+
+    button.download-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 13px;
+        min-height: 48px;
+    }
+
+    button.download-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Custom scrollbar for mobile - slightly wider for easier scrolling */
+    .report-output::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .report-output::-webkit-scrollbar-thumb {
+        border-radius: 3px;
+    }
+    
 }

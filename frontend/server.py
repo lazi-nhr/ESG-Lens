@@ -3,7 +3,7 @@ Reverse-proxy frontend server.
 
 This server does two jobs:
   1. Serves static files (index.html, etc.) for browser requests.
-  2. Acts as a *reverse proxy* for API paths (/health, /documents, /query):
+    2. Acts as a *reverse proxy* for API paths (/health, /documents, /query, /criteria):
      it receives the request from the browser, forwards it to the backend
      over the Nuvolos internal network, and returns the backend's response.
 
@@ -20,6 +20,12 @@ import urllib.request
 import urllib.error
 import logging
 
+
+# -- Activate .env variables from .env file (if it exists) ---
+from dotenv import load_dotenv
+load_dotenv()
+
+
 # ── Logging configuration ─────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -32,12 +38,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── Backend URL ──────────────────────────────────────────────────────────
-# The backend lives on the Nuvolos internal network.  Its hostname is set
-# via the BACKEND_HOST environment variable (provided by Nuvolos or by
-# start_frontend.py).  The browser never sees this URL.
-BACKEND_HOST = os.getenv('BACKEND_HOST', 'http://localhost:8500')
-if not BACKEND_HOST.startswith('http'):
-    BACKEND_HOST = f'http://{BACKEND_HOST}'
+# The backend lives on the Nuvolos internal network (or localhost for local dev).
+# This URL is set via the BACKEND_URL environment variable.
+# The browser never sees this URL (it only talks to this reverse proxy).
+BACKEND_URL = os.getenv('BACKEND_URL', 'localhost:8500')
+if not BACKEND_URL.startswith('http'):
+    BACKEND_URL = f'http://{BACKEND_URL}'
 
 class StaticFileHandler(SimpleHTTPRequestHandler):
     """Serves static files and reverse-proxies API paths to the backend."""
@@ -58,7 +64,7 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
     def proxy_to_backend(self, method):
         """Forward a request to the backend and relay its response."""
         try:
-            backend_url = f"{BACKEND_HOST}{self.path}"
+            backend_url = f"{BACKEND_URL}{self.path}"
             logger.info(f"{method} {self.path} → {backend_url}")
             
             # Read request body for POST requests
@@ -110,9 +116,12 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
         path_without_query = self.path.split('?')[0]
         
         # API paths → forward to backend
+      
         if (path_without_query == '/health' or 
             path_without_query.startswith('/documents') or 
-            path_without_query.startswith('/query')):
+            path_without_query.startswith('/query') or
+            path_without_query.startswith('/criteria') or
+            path_without_query.startswith('/companies')): # <--- ADD THIS LINE
             self.proxy_to_backend('GET')
             return
 
@@ -160,10 +169,13 @@ class StaticFileHandler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         """Handle CORS preflight requests."""
         path_without_query = self.path.split('?')[0]
-        if (path_without_query.startswith('/documents') or 
-            path_without_query.startswith('/query') or
-            path_without_query.startswith('/evaluate')):
+        if ('/documents' in path_without_query or 
+            '/query' in path_without_query or
+            '/evaluate' in path_without_query or
+            '/criteria' in path_without_query or
+            '/companies' in path_without_query): # <-- Added here too!
             self.send_response(200)
+            # ... rest of the code stays the same
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -177,14 +189,14 @@ def run_server(port=None):
     """Run the frontend server."""
     if port is None:
         port = int(os.getenv('FRONTEND_PORT', '3000'))
-    # Change to the frontend directory
+        
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     
     server_address = ('', port)
     httpd = HTTPServer(server_address, StaticFileHandler)
     
     logger.info(f"Frontend server starting on http://localhost:{port}")
-    logger.info(f"Backend URL: {BACKEND_HOST}")
+    logger.info(f"Backend URL: {BACKEND_URL}")
     logger.info(f"Serving files from: {os.getcwd()}")
     logger.info("Press Ctrl+C to stop the server")
     

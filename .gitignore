@@ -45,6 +45,10 @@ Thumbs.db
 *.db
 *.sqlite3
 
+# Data files
+data/raw_pdfs/
+data/raw_pdfs/processed/
+
 # Node modules (if any)
 node_modules/
 
@@ -54,4 +58,10 @@ node_modules/
 
 # Env files
 .env
-backend/app/core/.env
+
+# Archive Folder
+archive/
+
+LICENSE
+
+**/.DS_Store

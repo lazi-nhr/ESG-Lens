@@ -37,9 +37,20 @@ def init_db():
             CREATE TABLE IF NOT EXISTS documents (
                 id SERIAL PRIMARY KEY,
                 content TEXT NOT NULL,
-                embedding vector(384),
+                embedding vector(768),
+                company VARCHAR(255),
+                report_title VARCHAR(500),
+                year INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        """)
+
+        # Add new columns if they don't exist (for existing databases)
+        cur.execute("""
+            ALTER TABLE documents
+            ADD COLUMN IF NOT EXISTS company VARCHAR(255),
+            ADD COLUMN IF NOT EXISTS report_title VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS year INTEGER;
         """)
 
         # Create index for vector similarity search

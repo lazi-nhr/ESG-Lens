@@ -32,7 +32,8 @@ class MongoStore:
 
     def all_chunk_texts_and_ids(self) -> Tuple[List[str], List[str]]:
         docs = list(self.db.chunks.find({}, {"_id": 1, "text": 1}))
-        texts = [d.get("text", "") for d in docs]
+        # prefer cleaned text if available for retrieval/tokenization consistency
+        texts = [d.get("clean_text") or d.get("text", "") for d in docs]
         ids = [d.get("_id") for d in docs]
         return texts, ids
 
