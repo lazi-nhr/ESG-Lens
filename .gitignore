@@ -63,3 +63,5 @@ node_modules/
 archive/
 
 **/.DS_Store
+
+data/
